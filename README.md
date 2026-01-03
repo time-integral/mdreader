@@ -16,7 +16,7 @@ uv add mdreader
 
 ## How to use
 
-You can read an FMI 2.0 `modelDescription.xml` file, an FMU file, or an unzipped FMU directory containing the `modelDescription.xml` file.
+To read and parse an FMI 2.0 model description:
 
 ```python
 from mdreader.fmi2 import read_model_description
@@ -24,11 +24,11 @@ from mdreader.fmi2 import read_model_description
 # Read from XML file
 md = read_model_description("path/to/modelDescription.xml")
 
-# Read from FMU file
+# Read from FMU archive
 md = read_model_description("path/to/model.fmu")
 
-# Read from an unzipped fmu directory containing modelDescription.xml
-md = read_model_description("path/to/directory")
+# Read from unzipped FMU directory
+md = read_model_description("path/to/unzipped/fmu/directory")
 
 print(md)
 ```
@@ -52,7 +52,7 @@ print(md)
 
 ## Related projects
 
-* [fmpy](https://github.com/CATIA-Systems/FMPy): A similar `read_model_description` function is available in FMPy, but it uses custom classes instead of Pydantic models.
+* [fmpy](https://github.com/CATIA-Systems/FMPy): A similar `read_model_description` function is available in FMPy, but it uses custom classes instead of Pydantic models and has more dependencies.
 
 ## Licensing
 
