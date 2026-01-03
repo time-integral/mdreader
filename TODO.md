@@ -4,8 +4,8 @@
 - [x] add version bump
 - [x] add makefile
 - [x] add license
-- [ ] add github action
-- [ ] add pub to pypi
+- [x] add github action
+- [x] add pub to pypi
 
 ## next
 

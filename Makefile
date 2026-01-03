@@ -56,7 +56,7 @@ publish-dryrun: build ## Dry run of publishing the package to PyPI
 # TODO: Check if it will run the pytest from the correct venv
 test: ## Run tests using pytest
 	@echo "🚀 Running tests with pytest"
-	@uv run python -m pytest --doctest-modules
+	@uv run --frozen pytest --doctest-modules
 
 .PHONY: help
 help:
