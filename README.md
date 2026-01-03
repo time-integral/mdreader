@@ -43,16 +43,16 @@ print(md)
 - Support for both Model Exchange and Co-Simulation interfaces
 - Parse model structure, dependencies, and experiment configurations
 
-## Related projects
-
-* [fmpy](https://github.com/CATIA-Systems/FMPy)
-
 ## Why another FMI model description reader?
 
 * **Lightweight**: mdreader only depends on Pydantic
 * **De/Serialization**: Pydantic models support easy serialization to/from JSON, dict, etc.
 * **Validation**: mdreader uses Pydantic models to ensure the integrity of the parsed data
 * **FMI version exclusive**: The `fmi2.FMIModelDescription` class is specific to FMI 2.0 (not a mix of FMI1/2/3), making it simpler to use for that version
+
+## Related projects
+
+* [fmpy](https://github.com/CATIA-Systems/FMPy): A similar `read_model_description` function is available in FMPy, but it uses custom classes instead of Pydantic models.
 
 ## Licensing
 
