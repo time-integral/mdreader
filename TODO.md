@@ -2,7 +2,8 @@
 
 - [x] add readme
 - [x] add version bump
-- [ ] add makefile
+- [x] add makefile
+- [x] add license
 - [ ] add github action
 - [ ] add pub to pypi
 
