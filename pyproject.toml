@@ -1,15 +1,19 @@
 [project]
 name = "mdreader"
 version = "0.1.0"
-description = "Add your description here"
+description = "A Python library for reading and parsing Functional Mock-up Interface model description XML file."
 readme = "README.md"
 authors = [
     { name = "coder", email = "coder@timeintegral.ai" }
 ]
+license = {file = "LICENSE"}
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.11.5,<3.0.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/time-integral/mdreader"
 
 [build-system]
 requires = ["uv_build>=0.9.1,<0.10.0"]
