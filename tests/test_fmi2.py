@@ -722,3 +722,152 @@ def test_str_to_bool_function():
 
     # Test None input
     assert _str_to_bool(None) is None
+
+
+def test_read_model_description_unsupported_file_type():
+    """Test that read_model_description raises error for unsupported file types"""
+    from mdreader.fmi2 import read_model_description
+    import tempfile
+    import os
+
+    # Create a temporary file with unsupported extension
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as tmp:
+        tmp.write(b"dummy content")
+        tmp_path = tmp.name
+
+    try:
+        with pytest.raises(ValueError, match="Unsupported file type"):
+            read_model_description(tmp_path)
+    finally:
+        os.unlink(tmp_path)
+
+
+def test_get_type_category_methods():
+    """Test the get_type_category and get_variable_type methods"""
+    from mdreader.fmi2 import SimpleType, RealSimpleType, ScalarVariable, RealVariable
+
+    # Test SimpleType.get_type_category
+    real_simple_type = RealSimpleType()
+    simple_type = SimpleType(name="test", real=real_simple_type)
+    assert simple_type.get_type_category() == "Real"
+
+    # Test ScalarVariable.get_variable_type
+    real_var = RealVariable()
+    scalar_var = ScalarVariable(name="test", value_reference=1, real=real_var)
+    assert scalar_var.get_variable_type() == "Real"
+
+
+def test_error_conditions_in_parsing():
+    """Test error conditions in XML parsing"""
+    from mdreader.fmi2 import (
+        _parse_xml_to_model,
+        _parse_model_exchange,
+        _parse_co_simulation,
+        _parse_unit,
+        _parse_display_unit,
+        _parse_simple_type,
+        _parse_enumeration_simple_type,
+    )
+    import xml.etree.ElementTree as ET
+
+    # Test missing fmiVersion attribute
+    xml_content = """<?xml version="1.0" encoding="UTF-8"?>
+    <fmiModelDescription modelName="Test" guid="test">
+    </fmiModelDescription>"""
+
+    with pytest.raises(ValueError, match="fmiVersion attribute is required"):
+        _parse_xml_to_model(ET.fromstring(xml_content))
+
+    # Test missing modelName attribute
+    xml_content = """<?xml version="1.0" encoding="UTF-8"?>
+    <fmiModelDescription fmiVersion="2.0" guid="test">
+    </fmiModelDescription>"""
+
+    with pytest.raises(ValueError, match="modelName attribute is required"):
+        _parse_xml_to_model(ET.fromstring(xml_content))
+
+    # Test missing GUID attribute
+    xml_content = """<?xml version="1.0" encoding="UTF-8"?>
+    <fmiModelDescription fmiVersion="2.0" modelName="Test">
+    </fmiModelDescription>"""
+
+    with pytest.raises(ValueError, match="GUID attribute is required"):
+        _parse_xml_to_model(ET.fromstring(xml_content))
+
+    # Test ModelExchange element without modelIdentifier
+    me_xml = ET.fromstring("<ModelExchange></ModelExchange>")
+    with pytest.raises(
+        ValueError, match="ModelExchange element must have modelIdentifier attribute"
+    ):
+        _parse_model_exchange(me_xml)
+
+    # Test CoSimulation element without modelIdentifier
+    cs_xml = ET.fromstring("<CoSimulation></CoSimulation>")
+    with pytest.raises(
+        ValueError, match="CoSimulation element must have modelIdentifier attribute"
+    ):
+        _parse_co_simulation(cs_xml)
+
+    # Test Unit element without name attribute
+    unit_xml = ET.fromstring("<Unit></Unit>")
+    with pytest.raises(ValueError, match="Unit element.*must have name attribute"):
+        _parse_unit(unit_xml)
+
+    # Test DisplayUnit element without name attribute
+    display_unit_xml = ET.fromstring("<DisplayUnit></DisplayUnit>")
+    with pytest.raises(
+        ValueError, match="DisplayUnit element.*must have name attribute"
+    ):
+        _parse_display_unit(display_unit_xml)
+
+    # Test SimpleType element without name attribute
+    simple_type_xml = ET.fromstring("<SimpleType></SimpleType>")
+    with pytest.raises(
+        ValueError, match="SimpleType element.*must have name attribute"
+    ):
+        _parse_simple_type(simple_type_xml)
+
+    # Test Item element without name attribute
+    item_xml = ET.fromstring('<Item value="1"></Item>')
+    with pytest.raises(ValueError, match="Item element.*must have name attribute"):
+        # We need to test this inside an enumeration context
+        enum_xml = ET.fromstring('<Enumeration><Item value="1"></Item></Enumeration>')
+        _parse_enumeration_simple_type(enum_xml)
+
+    # Test Item element without value attribute
+    item_xml = ET.fromstring('<Item name="test"></Item>')
+    with pytest.raises(ValueError, match="Item element.*must have value attribute"):
+        # We need to test this inside an enumeration context
+        enum_xml = ET.fromstring('<Enumeration><Item name="test"></Item></Enumeration>')
+        _parse_enumeration_simple_type(enum_xml)
+
+
+def test_edge_cases_and_validators():
+    """Test edge cases and validation logic"""
+    from mdreader.fmi2 import RealSimpleType, IntegerSimpleType, _str_to_bool
+
+    # Test RealSimpleType with max < min (should raise error)
+    with pytest.raises(ValueError, match="max.*must be >= min"):
+        RealSimpleType(min_value=10.0, max_value=5.0)
+
+    # Test IntegerSimpleType with max < min (should raise error)
+    with pytest.raises(ValueError, match="max.*must be >= min"):
+        IntegerSimpleType(min_value=10, max_value=5)
+
+    # Test _str_to_bool with invalid value
+    with pytest.raises(ValueError, match="Cannot convert.*to boolean"):
+        _str_to_bool("invalid_boolean_value")
+
+    # Test _str_to_bool with various valid values
+    assert _str_to_bool("true") is True
+    assert _str_to_bool("false") is False
+    assert _str_to_bool("1") is True
+    assert _str_to_bool("0") is False
+    assert _str_to_bool("yes") is True
+    assert _str_to_bool("no") is False
+    assert _str_to_bool("on") is True
+    assert _str_to_bool("off") is False
+    assert _str_to_bool("") is False
+    assert _str_to_bool(None) is None
+    assert _str_to_bool(False) is False
+    assert _str_to_bool(True) is True
