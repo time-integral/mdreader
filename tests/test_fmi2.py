@@ -30,17 +30,17 @@ def reference_fmus_dir(tmp_path_factory):
 
 
 @pytest.mark.parametrize(
-    "reference_fmu, expected_fmi_version",
+    "reference_fmu, expected_metadata",
     [
-        ("2.0/Feedthrough.fmu", "2.0"),
-        ("2.0/BouncingBall.fmu", "2.0"),
-        ("2.0/VanDerPol.fmu", "2.0"),
-        ("2.0/Dahlquist.fmu", "2.0"),
-        ("2.0/Stair.fmu", "2.0"),
-        ("2.0/Resource.fmu", "2.0"),
+        ("2.0/Feedthrough.fmu", ("2.0", "Feedthrough")),
+        ("2.0/BouncingBall.fmu", ("2.0", "BouncingBall")),
+        ("2.0/VanDerPol.fmu", ("2.0", "VanDerPol")),
+        ("2.0/Dahlquist.fmu", ("2.0", "Dahlquist")),
+        ("2.0/Stair.fmu", ("2.0", "Stair")),
+        ("2.0/Resource.fmu", ("2.0", "Resource")),
     ],
 )
-def test_fmi_version(reference_fmu, expected_fmi_version, reference_fmus_dir):
+def test_metadata(reference_fmu, expected_fmi_version, reference_fmus_dir):
     filename = (reference_fmus_dir / reference_fmu).absolute()
     md = read_model_description(filename)
     assert md.fmi_version == expected_fmi_version
