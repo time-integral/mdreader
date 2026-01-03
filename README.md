@@ -1,6 +1,6 @@
 # mdreader
 
-A Python library for reading and parsing Functional Mock-up Interface (FMI2.0 currently) model description XML file. 
+A Python library for reading and parsing Functional Mock-up Interface (FMI2.0 currently) model description XML file.
 
 Pydantic models are used to represent the structure of the model description, providing type validation and easy access to model information.
 
