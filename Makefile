@@ -17,8 +17,6 @@ clean: ## Clean up build, test, and coverage artifacts
 	rm -rf .ruff_cache/
 
 install: clean ## Install dependencies and create virtual environment
-	@echo "🚀 Creating virtual environment with python$(PYTHON_VERSION)"
-	@uv venv -p python$(PYTHON_VERSION)
 	@echo "🚀 Installing dependencies from pyproject.toml"
 	@uv sync && uvx pre-commit install
 
@@ -26,7 +24,7 @@ check: ## Check code quality and consistency
 	@echo "🚀 Checking lock file consistency with 'pyproject.toml'"
 	@uv lock --locked
 	@echo "🚀 Linting code: Running pre-commit"
-	@uv run pre-commit run -a
+	@uvx pre-commit run -a
 	@echo "🚀 Static type checking: Running pyright"
 	@uv run pyright
 
