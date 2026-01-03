@@ -1,10 +1,10 @@
-# mdreader
+# mdreader 📖
 
 A Python library for reading and parsing Functional Mock-up Interface (FMI2.0 currently) model description XML file into Pydantic models.
 
 [![PyPI version](https://badge.fury.io/py/mdreader.svg)](https://badge.fury.io/py/mdreader)
 
-## Installation
+## Installation 
 
 Add `mdreader` to your `pyproject.toml` with `uv` with:
 
@@ -14,7 +14,7 @@ uv add mdreader
 
 > To install `uv`, see https://docs.astral.sh/uv/getting-started/installation/
 
-## Getting started
+## How to use
 
 You can read an FMI 2.0 `modelDescription.xml` file, an FMU file, or an unzipped FMU directory containing the `modelDescription.xml` file.
 
