@@ -1,9 +1,84 @@
+import pathlib
 import xml.etree.ElementTree as ET
+import zipfile
 from enum import Enum
 from typing import Annotated
 from xml.etree.ElementTree import Element
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+__all__ = [
+    "read_model_description",
+    "CausalityEnum",
+    "VariabilityEnum",
+    "InitialEnum",
+    "VariableNamingConventionEnum",
+    "DependenciesKindEnum",
+    "BaseUnit",
+    "DisplayUnit",
+    "Unit",
+    "Item",
+    "RealSimpleType",
+    "IntegerSimpleType",
+    "BooleanSimpleType",
+    "StringSimpleType",
+    "EnumerationSimpleType",
+    "SimpleType",
+    "File",
+    "SourceFiles",
+    "ModelExchange",
+    "CoSimulation",
+    "Category",
+    "LogCategories",
+    "DefaultExperiment",
+    "Tool",
+    "Annotation",
+    "UnknownDependency",
+    "VariableDependency",
+    "InitialUnknown",
+    "InitialUnknowns",
+    "ModelStructure",
+    "RealVariable",
+    "IntegerVariable",
+    "BooleanVariable",
+    "StringVariable",
+    "EnumerationVariable",
+    "ScalarVariable",
+    "ModelVariables",
+    "UnitDefinitions",
+    "TypeDefinitions",
+    "FmiModelDescription",
+]
+
+
+def read_model_description(filename: str | pathlib.Path) -> "FmiModelDescription":
+    """Read and parse an FMI 2.0 model description XML file
+
+    Args:
+        filename (str | pathlib.Path): Path to the FMI 2.0 model description XML file or FMU directory or FMU file
+
+    Returns:
+        FmiModelDescription: Parsed FMI 2.0 model description
+    """
+    filename = pathlib.Path(filename)
+    if filename.suffix == ".xml":
+        filename = filename
+    elif filename.is_dir():
+        filename = filename / "modelDescription.xml"
+    elif filename.suffix == ".fmu":
+        with zipfile.ZipFile(filename, "r") as zf:
+            with zf.open("modelDescription.xml") as xml_file:
+                tree = ET.parse(xml_file)
+                root = tree.getroot()
+                return _parse_xml_to_model(root)
+    else:
+        raise ValueError(
+            f"Unsupported file type: {filename}. Must be .xml, .fmu, or directory"
+        )
+
+    tree = ET.parse(filename)
+    root = tree.getroot()
+    return _parse_xml_to_model(root)
 
 
 class CausalityEnum(str, Enum):
@@ -1133,7 +1208,7 @@ class FmiModelDescription(BaseModel):
     ] = None
 
 
-def parse_xml_to_model(xml_content: str | Element) -> FmiModelDescription:
+def _parse_xml_to_model(xml_content: str | Element) -> FmiModelDescription:
     """
     Parse XML content and convert it to FmiModelDescription Pydantic model.
 
@@ -1365,7 +1440,7 @@ def _parse_unit_definitions(elem: Element) -> UnitDefinitions:
     for unit_elem in elem.findall("Unit"):
         unit = _parse_unit(unit_elem)
         units.append(unit)
-    return UnitDefinitions(units=units)  # type: ignore
+    return UnitDefinitions(units=units)
 
 
 def _parse_unit(elem: Element) -> Unit:
@@ -1408,8 +1483,8 @@ def _parse_base_unit(elem: Element) -> BaseUnit:
         kg=int(kg) if kg is not None else 0,
         m=int(m) if m is not None else 0,
         s=int(s) if s is not None else 0,
-        a=int(a) if a is not None else 0,  # type: ignore
-        k=int(k) if k is not None else 0,  # type: ignore
+        a=int(a) if a is not None else 0,
+        k=int(k) if k is not None else 0,
         mol=int(mol) if mol is not None else 0,
         cd=int(cd) if cd is not None else 0,
         rad=int(rad) if rad is not None else 0,
@@ -1439,7 +1514,7 @@ def _parse_type_definitions(elem: Element) -> TypeDefinitions:
     for simple_type_elem in elem.findall("SimpleType"):
         simple_type = _parse_simple_type(simple_type_elem)
         simple_types.append(simple_type)
-    return TypeDefinitions(simple_types=simple_types)  # type: ignore
+    return TypeDefinitions(simple_types=simple_types)
 
 
 def _parse_simple_type(elem: Element) -> SimpleType:

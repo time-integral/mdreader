@@ -1,0 +1,88 @@
+import pytest
+from pathlib import Path
+from mdreader.fmi2 import read_model_description
+
+# Get the directory where this test file is located
+TEST_DIR = Path(__file__).parent
+SAMPLES_DIR = TEST_DIR / "samples" / "fmi2"
+XML_FILES = list(SAMPLES_DIR.glob("*.xml"))
+
+
+@pytest.mark.parametrize("xml_file", XML_FILES, ids=[f.name for f in XML_FILES])
+def test_parse_xml_file(xml_file):
+    """Test parsing a single XML file"""
+    model = read_model_description(xml_file)
+
+    # Basic assertions
+    assert model.model_name
+    assert model.fmi_version
+    assert model.model_variables
+
+    # Validate the model using Pydantic's validation
+    # This ensures the model can be dumped and re-validated
+    model.model_validate(model.model_dump())
+
+
+@pytest.mark.parametrize("xml_file", XML_FILES, ids=[f.name for f in XML_FILES])
+def test_model_serialization(xml_file):
+    """Test serializing the model back to dict"""
+    model = read_model_description(xml_file)
+
+    # Convert back to dict
+    model_dict = model.model_dump()
+
+    # Check consistency
+    assert model_dict["fmi_version"] == model.fmi_version
+    assert model_dict["model_name"] == model.model_name
+
+
+@pytest.mark.parametrize("xml_file", XML_FILES, ids=[f.name for f in XML_FILES])
+def test_model_details(xml_file):
+    """Test detailed properties of the model"""
+    model = read_model_description(xml_file)
+
+    # Check required attributes
+    assert model.guid is not None
+    assert len(model.guid) > 0
+    assert model.generation_tool is not None
+
+    # Check Model Variables
+    assert model.model_variables is not None
+    assert len(model.model_variables.variables) > 0
+
+    # Check that every variable has a name and value reference
+    for var in model.model_variables.variables:
+        assert var.name is not None
+        assert var.value_reference is not None
+        # Check that one of the types is set (Real, Integer, Boolean, String, Enumeration)
+        assert any(
+            [
+                var.real is not None,
+                var.integer is not None,
+                var.boolean is not None,
+                var.string is not None,
+                var.enumeration is not None,
+            ]
+        )
+
+    # Check Model Structure if present
+    # if model.model_structure:
+    #     if model.model_structure.outputs:
+    #         for output in model.model_structure.outputs:
+    #             assert output.index > 0
+
+    #     if model.model_structure.derivatives:
+
+    # Specific checks for BouncingBall (test1.xml)
+    if model.model_name == "BouncingBall":
+        # Check specific variables exist
+        var_names = [v.name for v in model.model_variables.variables]
+        assert "time" in var_names
+        assert "h" in var_names
+        assert "v" in var_names
+
+        # Check unit definitions
+        assert model.unit_definitions is not None
+        unit_names = [u.name for u in model.unit_definitions.units]
+        assert "m" in unit_names
+        assert "m/s" in unit_names
