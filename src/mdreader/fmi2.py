@@ -163,6 +163,31 @@ class BaseUnit(BaseModel):
         Field(default=0.0, alias="offset", description="Offset for unit conversion"),
     ] = 0.0
 
+    def to_xml(self) -> Element:
+        """Convert BaseUnit to XML Element"""
+        element = Element("BaseUnit")
+        if self.kg is not None and self.kg != 0:
+            element.set("kg", str(self.kg))
+        if self.m is not None and self.m != 0:
+            element.set("m", str(self.m))
+        if self.s is not None and self.s != 0:
+            element.set("s", str(self.s))
+        if self.a is not None and self.a != 0:
+            element.set("A", str(self.a))
+        if self.k is not None and self.k != 0:
+            element.set("K", str(self.k))
+        if self.mol is not None and self.mol != 0:
+            element.set("mol", str(self.mol))
+        if self.cd is not None and self.cd != 0:
+            element.set("cd", str(self.cd))
+        if self.rad is not None and self.rad != 0:
+            element.set("rad", str(self.rad))
+        if self.factor is not None and self.factor != 1.0:
+            element.set("factor", str(self.factor))
+        if self.offset is not None and self.offset != 0.0:
+            element.set("offset", str(self.offset))
+        return element
+
 
 class DisplayUnit(BaseModel):
     """Display unit definition"""
@@ -193,6 +218,16 @@ class DisplayUnit(BaseModel):
             description="Offset for display unit conversion",
         ),
     ] = 0.0
+
+    def to_xml(self) -> Element:
+        """Convert DisplayUnit to XML Element"""
+        element = Element("DisplayUnit")
+        element.set("name", self.name)
+        if self.factor is not None and self.factor != 1.0:
+            element.set("factor", str(self.factor))
+        if self.offset is not None and self.offset != 0.0:
+            element.set("offset", str(self.offset))
+        return element
 
 
 class Unit(BaseModel):
@@ -225,6 +260,17 @@ class Unit(BaseModel):
         ),
     ] = None
 
+    def to_xml(self) -> Element:
+        """Convert Unit to XML Element"""
+        element = Element("Unit")
+        element.set("name", self.name)
+        if self.base_unit is not None:
+            element.append(self.base_unit.to_xml())
+        if self.display_units is not None:
+            for display_unit in self.display_units:
+                element.append(display_unit.to_xml())
+        return element
+
 
 class Item(BaseModel):
     """Enumeration item"""
@@ -250,6 +296,15 @@ class Item(BaseModel):
             description="Description of the enumeration item",
         ),
     ] = None
+
+    def to_xml(self) -> Element:
+        """Convert Item to XML Element"""
+        element = Element("Item")
+        element.set("name", self.name)
+        element.set("value", str(self.value))
+        if self.description is not None:
+            element.set("description", self.description)
+        return element
 
 
 class RealSimpleType(BaseModel):
@@ -328,6 +383,27 @@ class RealSimpleType(BaseModel):
                 )
         return self
 
+    def to_xml(self) -> Element:
+        """Convert RealSimpleType to XML Element"""
+        element = Element("Real")
+        if self.quantity is not None:
+            element.set("quantity", self.quantity)
+        if self.unit is not None:
+            element.set("unit", self.unit)
+        if self.display_unit is not None:
+            element.set("displayUnit", self.display_unit)
+        if self.relative_quantity is not None and self.relative_quantity:
+            element.set("relativeQuantity", str(self.relative_quantity).lower())
+        if self.min_value is not None:
+            element.set("min", str(self.min_value))
+        if self.max_value is not None:
+            element.set("max", str(self.max_value))
+        if self.nominal is not None:
+            element.set("nominal", str(self.nominal))
+        if self.unbounded is not None and self.unbounded:
+            element.set("unbounded", str(self.unbounded).lower())
+        return element
+
 
 class IntegerSimpleType(BaseModel):
     """Integer simple type definition"""
@@ -369,6 +445,17 @@ class IntegerSimpleType(BaseModel):
                 )
         return self
 
+    def to_xml(self) -> Element:
+        """Convert IntegerSimpleType to XML Element"""
+        element = Element("Integer")
+        if self.quantity is not None:
+            element.set("quantity", self.quantity)
+        if self.min_value is not None:
+            element.set("min", str(self.min_value))
+        if self.max_value is not None:
+            element.set("max", str(self.max_value))
+        return element
+
 
 class BooleanSimpleType(BaseModel):
     """Boolean simple type definition"""
@@ -376,12 +463,22 @@ class BooleanSimpleType(BaseModel):
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
     pass  # Boolean types have no specific attributes
 
+    def to_xml(self) -> Element:
+        """Convert BooleanSimpleType to XML Element"""
+        element = Element("Boolean")
+        return element
+
 
 class StringSimpleType(BaseModel):
     """String simple type definition"""
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
     pass  # String types have no specific attributes
+
+    def to_xml(self) -> Element:
+        """Convert StringSimpleType to XML Element"""
+        element = Element("String")
+        return element
 
 
 class EnumerationSimpleType(BaseModel):
@@ -400,6 +497,16 @@ class EnumerationSimpleType(BaseModel):
     items: Annotated[
         list[Item], Field(..., alias="Item", description="List of enumeration items")
     ]
+
+    def to_xml(self) -> Element:
+        """Convert EnumerationSimpleType to XML Element"""
+        element = Element("Enumeration")
+        if self.quantity is not None:
+            element.set("quantity", self.quantity)
+        if self.items is not None:
+            for item in self.items:
+                element.append(item.to_xml())
+        return element
 
 
 class SimpleType(BaseModel):
@@ -456,6 +563,27 @@ class SimpleType(BaseModel):
             return "Enumeration"
         return None
 
+    def to_xml(self) -> Element:
+        """Convert SimpleType to XML Element"""
+        element = Element("SimpleType")
+        element.set("name", self.name)
+        if self.description is not None:
+            element.set("description", self.description)
+
+        # Add the appropriate type element
+        if self.real is not None:
+            element.append(self.real.to_xml())
+        elif self.integer is not None:
+            element.append(self.integer.to_xml())
+        elif self.boolean is not None:
+            element.append(self.boolean.to_xml())
+        elif self.string is not None:
+            element.append(self.string.to_xml())
+        elif self.enumeration is not None:
+            element.append(self.enumeration.to_xml())
+
+        return element
+
 
 class File(BaseModel):
     """Source file definition"""
@@ -464,6 +592,12 @@ class File(BaseModel):
 
     name: Annotated[str, Field(..., alias="name")]
 
+    def to_xml(self) -> Element:
+        """Convert File to XML Element"""
+        element = Element("File")
+        element.set("name", self.name)
+        return element
+
 
 class SourceFiles(BaseModel):
     """List of source files"""
@@ -471,6 +605,14 @@ class SourceFiles(BaseModel):
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
     files: Annotated[list[File], Field(..., alias="File")]
+
+    def to_xml(self) -> Element:
+        """Convert SourceFiles to XML Element"""
+        element = Element("SourceFiles")
+        if self.files is not None:
+            for file in self.files:
+                element.append(file.to_xml())
+        return element
 
 
 class ModelExchange(BaseModel):
@@ -504,6 +646,59 @@ class ModelExchange(BaseModel):
     source_files: Annotated[
         SourceFiles | None, Field(default=None, alias="SourceFiles")
     ] = None
+
+    def to_xml(self) -> Element:
+        """Convert ModelExchange to XML Element"""
+        element = Element("ModelExchange")
+        element.set("modelIdentifier", self.model_identifier)
+        if self.needs_execution_tool is not None and self.needs_execution_tool:
+            element.set("needsExecutionTool", str(self.needs_execution_tool).lower())
+        if (
+            self.completed_integrator_step_not_needed is not None
+            and self.completed_integrator_step_not_needed
+        ):
+            element.set(
+                "completedIntegratorStepNotNeeded",
+                str(self.completed_integrator_step_not_needed).lower(),
+            )
+        if (
+            self.can_be_instantiated_only_once_per_process is not None
+            and self.can_be_instantiated_only_once_per_process
+        ):
+            element.set(
+                "canBeInstantiatedOnlyOncePerProcess",
+                str(self.can_be_instantiated_only_once_per_process).lower(),
+            )
+        if (
+            self.can_not_use_memory_management_functions is not None
+            and self.can_not_use_memory_management_functions
+        ):
+            element.set(
+                "canNotUseMemoryManagementFunctions",
+                str(self.can_not_use_memory_management_functions).lower(),
+            )
+        if (
+            self.can_get_and_set_fmu_state is not None
+            and self.can_get_and_set_fmu_state
+        ):
+            element.set(
+                "canGetAndSetFMUstate", str(self.can_get_and_set_fmu_state).lower()
+            )
+        if self.can_serialize_fmu_state is not None and self.can_serialize_fmu_state:
+            element.set(
+                "canSerializeFMUstate", str(self.can_serialize_fmu_state).lower()
+            )
+        if (
+            self.provides_directional_derivative is not None
+            and self.provides_directional_derivative
+        ):
+            element.set(
+                "providesDirectionalDerivative",
+                str(self.provides_directional_derivative).lower(),
+            )
+        if self.source_files is not None:
+            element.append(self.source_files.to_xml())
+        return element
 
 
 class CoSimulation(BaseModel):
@@ -548,6 +743,74 @@ class CoSimulation(BaseModel):
         SourceFiles | None, Field(default=None, alias="SourceFiles")
     ] = None
 
+    def to_xml(self) -> Element:
+        """Convert CoSimulation to XML Element"""
+        element = Element("CoSimulation")
+        element.set("modelIdentifier", self.model_identifier)
+        if self.needs_execution_tool is not None and self.needs_execution_tool:
+            element.set("needsExecutionTool", str(self.needs_execution_tool).lower())
+        if (
+            self.can_handle_variable_communication_step_size is not None
+            and self.can_handle_variable_communication_step_size
+        ):
+            element.set(
+                "canHandleVariableCommunicationStepSize",
+                str(self.can_handle_variable_communication_step_size).lower(),
+            )
+        if self.can_interpolate_inputs is not None and self.can_interpolate_inputs:
+            element.set(
+                "canInterpolateInputs", str(self.can_interpolate_inputs).lower()
+            )
+        if (
+            self.max_output_derivative_order is not None
+            and self.max_output_derivative_order != 0
+        ):
+            element.set(
+                "maxOutputDerivativeOrder", str(self.max_output_derivative_order)
+            )
+        if self.can_run_asynchronuously is not None and self.can_run_asynchronuously:
+            element.set(
+                "canRunAsynchronuously", str(self.can_run_asynchronuously).lower()
+            )
+        if (
+            self.can_be_instantiated_only_once_per_process is not None
+            and self.can_be_instantiated_only_once_per_process
+        ):
+            element.set(
+                "canBeInstantiatedOnlyOncePerProcess",
+                str(self.can_be_instantiated_only_once_per_process).lower(),
+            )
+        if (
+            self.can_not_use_memory_management_functions is not None
+            and self.can_not_use_memory_management_functions
+        ):
+            element.set(
+                "canNotUseMemoryManagementFunctions",
+                str(self.can_not_use_memory_management_functions).lower(),
+            )
+        if (
+            self.can_get_and_set_fmu_state is not None
+            and self.can_get_and_set_fmu_state
+        ):
+            element.set(
+                "canGetAndSetFMUstate", str(self.can_get_and_set_fmu_state).lower()
+            )
+        if self.can_serialize_fmu_state is not None and self.can_serialize_fmu_state:
+            element.set(
+                "canSerializeFMUstate", str(self.can_serialize_fmu_state).lower()
+            )
+        if (
+            self.provides_directional_derivative is not None
+            and self.provides_directional_derivative
+        ):
+            element.set(
+                "providesDirectionalDerivative",
+                str(self.provides_directional_derivative).lower(),
+            )
+        if self.source_files is not None:
+            element.append(self.source_files.to_xml())
+        return element
+
 
 class Category(BaseModel):
     """Log category definition"""
@@ -557,6 +820,14 @@ class Category(BaseModel):
     name: Annotated[str, Field(..., alias="name")]
     description: Annotated[str | None, Field(default=None, alias="description")] = None
 
+    def to_xml(self) -> Element:
+        """Convert Category to XML Element"""
+        element = Element("Category")
+        element.set("name", self.name)
+        if self.description is not None:
+            element.set("description", self.description)
+        return element
+
 
 class LogCategories(BaseModel):
     """Log categories list"""
@@ -564,6 +835,14 @@ class LogCategories(BaseModel):
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
     categories: Annotated[list[Category], Field(..., alias="Category")]
+
+    def to_xml(self) -> Element:
+        """Convert LogCategories to XML Element"""
+        element = Element("LogCategories")
+        if self.categories is not None:
+            for category in self.categories:
+                element.append(category.to_xml())
+        return element
 
 
 class DefaultExperiment(BaseModel):
@@ -576,6 +855,19 @@ class DefaultExperiment(BaseModel):
     tolerance: Annotated[float | None, Field(default=None, alias="tolerance")] = None
     step_size: Annotated[float | None, Field(default=None, alias="stepSize")] = None
 
+    def to_xml(self) -> Element:
+        """Convert DefaultExperiment to XML Element"""
+        element = Element("DefaultExperiment")
+        if self.start_time is not None:
+            element.set("startTime", str(self.start_time))
+        if self.stop_time is not None:
+            element.set("stopTime", str(self.stop_time))
+        if self.tolerance is not None:
+            element.set("tolerance", str(self.tolerance))
+        if self.step_size is not None:
+            element.set("stepSize", str(self.step_size))
+        return element
+
 
 class Tool(BaseModel):
     """Tool-specific annotation"""
@@ -587,6 +879,13 @@ class Tool(BaseModel):
     # In a more complete implementation, this could be more structured
     content: Annotated[dict | None, Field(default=None)] = None
 
+    def to_xml(self) -> Element:
+        """Convert Tool to XML Element"""
+        element = Element("Tool")
+        element.set("name", self.name)
+        # Note: content is not currently handled in XML conversion
+        return element
+
 
 class Annotation(BaseModel):
     """Vendor annotations"""
@@ -594,6 +893,14 @@ class Annotation(BaseModel):
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
     tools: Annotated[list[Tool], Field(..., alias="Tool")]
+
+    def to_xml(self) -> Element:
+        """Convert Annotation to XML Element"""
+        element = Element("Annotation")
+        if self.tools is not None:
+            for tool in self.tools:
+                element.append(tool.to_xml())
+        return element
 
 
 class UnknownDependency(BaseModel):
@@ -610,6 +917,19 @@ class UnknownDependency(BaseModel):
         Field(default=None, alias="dependenciesKind"),
     ] = None
 
+    def to_xml(self) -> Element:
+        """Convert UnknownDependency to XML Element"""
+        element = Element("Unknown")
+        element.set("index", str(self.index))
+        if self.dependencies is not None:
+            element.set("dependencies", " ".join(map(str, self.dependencies)))
+        if self.dependencies_kind is not None:
+            element.set(
+                "dependenciesKind",
+                " ".join([kind.value for kind in self.dependencies_kind]),
+            )
+        return element
+
 
 class VariableDependency(BaseModel):
     """Variable dependency definition"""
@@ -617,6 +937,14 @@ class VariableDependency(BaseModel):
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
     unknowns: Annotated[list[UnknownDependency], Field(..., alias="Unknown")]
+
+    def to_xml(self) -> Element:
+        """Convert VariableDependency to XML Element"""
+        element = Element("VariableDependency")
+        if self.unknowns is not None:
+            for unknown in self.unknowns:
+                element.append(unknown.to_xml())
+        return element
 
 
 class InitialUnknown(BaseModel):
@@ -633,6 +961,19 @@ class InitialUnknown(BaseModel):
         Field(default=None, alias="dependenciesKind"),
     ] = None
 
+    def to_xml(self) -> Element:
+        """Convert InitialUnknown to XML Element"""
+        element = Element("Unknown")
+        element.set("index", str(self.index))
+        if self.dependencies is not None:
+            element.set("dependencies", " ".join(map(str, self.dependencies)))
+        if self.dependencies_kind is not None:
+            element.set(
+                "dependenciesKind",
+                " ".join([kind.value for kind in self.dependencies_kind]),
+            )
+        return element
+
 
 class InitialUnknowns(BaseModel):
     """List of initial unknown variables"""
@@ -640,6 +981,14 @@ class InitialUnknowns(BaseModel):
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
     unknowns: Annotated[list[InitialUnknown], Field(..., alias="Unknown")]
+
+    def to_xml(self) -> Element:
+        """Convert InitialUnknowns to XML Element"""
+        element = Element("InitialUnknowns")
+        if self.unknowns is not None:
+            for unknown in self.unknowns:
+                element.append(unknown.to_xml())
+        return element
 
 
 class ModelStructure(BaseModel):
@@ -656,6 +1005,25 @@ class ModelStructure(BaseModel):
     initial_unknowns: Annotated[
         InitialUnknowns | None, Field(default=None, alias="InitialUnknowns")
     ] = None
+
+    def to_xml(self) -> Element:
+        """Convert ModelStructure to XML Element"""
+        element = Element("ModelStructure")
+        if self.outputs is not None:
+            outputs_element = self.outputs.to_xml()
+            outputs_element.tag = (
+                "Outputs"  # Change tag from VariableDependency to Outputs
+            )
+            element.append(outputs_element)
+        if self.derivatives is not None:
+            derivatives_element = self.derivatives.to_xml()
+            derivatives_element.tag = (
+                "Derivatives"  # Change tag from VariableDependency to Derivatives
+            )
+            element.append(derivatives_element)
+        if self.initial_unknowns is not None:
+            element.append(self.initial_unknowns.to_xml())
+        return element
 
 
 class RealVariable(BaseModel):
@@ -756,6 +1124,35 @@ class RealVariable(BaseModel):
         ),
     ] = False
 
+    def to_xml(self) -> Element:
+        """Convert RealVariable to XML Element"""
+        element = Element("Real")
+        if self.declared_type is not None:
+            element.set("declaredType", self.declared_type)
+        if self.quantity is not None:
+            element.set("quantity", self.quantity)
+        if self.unit is not None:
+            element.set("unit", self.unit)
+        if self.display_unit is not None:
+            element.set("displayUnit", self.display_unit)
+        if self.relative_quantity is not None and self.relative_quantity:
+            element.set("relativeQuantity", str(self.relative_quantity).lower())
+        if self.min_value is not None:
+            element.set("min", str(self.min_value))
+        if self.max_value is not None:
+            element.set("max", str(self.max_value))
+        if self.nominal is not None:
+            element.set("nominal", str(self.nominal))
+        if self.unbounded is not None and self.unbounded:
+            element.set("unbounded", str(self.unbounded).lower())
+        if self.start is not None:
+            element.set("start", str(self.start))
+        if self.derivative is not None:
+            element.set("derivative", str(self.derivative))
+        if self.reinit is not None and self.reinit:
+            element.set("reinit", str(self.reinit).lower())
+        return element
+
 
 class IntegerVariable(BaseModel):
     """Integer variable definition"""
@@ -803,6 +1200,21 @@ class IntegerVariable(BaseModel):
         ),
     ] = None
 
+    def to_xml(self) -> Element:
+        """Convert IntegerVariable to XML Element"""
+        element = Element("Integer")
+        if self.declared_type is not None:
+            element.set("declaredType", self.declared_type)
+        if self.quantity is not None:
+            element.set("quantity", self.quantity)
+        if self.min_value is not None:
+            element.set("min", str(self.min_value))
+        if self.max_value is not None:
+            element.set("max", str(self.max_value))
+        if self.start is not None:
+            element.set("start", str(self.start))
+        return element
+
 
 class BooleanVariable(BaseModel):
     """Boolean variable definition"""
@@ -826,6 +1238,15 @@ class BooleanVariable(BaseModel):
         ),
     ] = None
 
+    def to_xml(self) -> Element:
+        """Convert BooleanVariable to XML Element"""
+        element = Element("Boolean")
+        if self.declared_type is not None:
+            element.set("declaredType", self.declared_type)
+        if self.start is not None:
+            element.set("start", str(self.start).lower())
+        return element
+
 
 class StringVariable(BaseModel):
     """String variable definition"""
@@ -848,6 +1269,15 @@ class StringVariable(BaseModel):
             description="Value before initialization, if initial=exact or approx",
         ),
     ] = None
+
+    def to_xml(self) -> Element:
+        """Convert StringVariable to XML Element"""
+        element = Element("String")
+        if self.declared_type is not None:
+            element.set("declaredType", self.declared_type)
+        if self.start is not None:
+            element.set("start", self.start)
+        return element
 
 
 class EnumerationVariable(BaseModel):
@@ -895,6 +1325,20 @@ class EnumerationVariable(BaseModel):
             description="Value before initialization, if initial=exact or approx. max >= start >= min required",
         ),
     ] = None
+
+    def to_xml(self) -> Element:
+        """Convert EnumerationVariable to XML Element"""
+        element = Element("Enumeration")
+        element.set("declaredType", self.declared_type)
+        if self.quantity is not None:
+            element.set("quantity", self.quantity)
+        if self.min_value is not None:
+            element.set("min", str(self.min_value))
+        if self.max_value is not None:
+            element.set("max", str(self.max_value))
+        if self.start is not None:
+            element.set("start", str(self.start))
+        return element
 
 
 class ScalarVariable(BaseModel):
@@ -1007,6 +1451,43 @@ class ScalarVariable(BaseModel):
             return "Enumeration"
         return None
 
+    def to_xml(self) -> Element:
+        """Convert ScalarVariable to XML Element"""
+        element = Element("ScalarVariable")
+        element.set("name", self.name)
+        element.set("valueReference", str(self.value_reference))
+        if self.description is not None:
+            element.set("description", self.description)
+        if self.causality is not None:
+            element.set("causality", self.causality.value)
+        if self.variability is not None:
+            element.set("variability", self.variability.value)
+        if self.initial is not None:
+            element.set("initial", self.initial.value)
+        if self.can_handle_multiple_set_per_time_instant is not None:
+            element.set(
+                "canHandleMultipleSetPerTimeInstant",
+                str(self.can_handle_multiple_set_per_time_instant).lower(),
+            )
+
+        # Add the appropriate variable type element
+        if self.real is not None:
+            element.append(self.real.to_xml())
+        elif self.integer is not None:
+            element.append(self.integer.to_xml())
+        elif self.boolean is not None:
+            element.append(self.boolean.to_xml())
+        elif self.string is not None:
+            element.append(self.string.to_xml())
+        elif self.enumeration is not None:
+            element.append(self.enumeration.to_xml())
+
+        # Add annotations if present
+        if self.annotations is not None:
+            element.append(self.annotations.to_xml())
+
+        return element
+
 
 class ModelVariables(BaseModel):
     """Model variables list"""
@@ -1014,6 +1495,14 @@ class ModelVariables(BaseModel):
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
     variables: Annotated[list[ScalarVariable], Field(..., alias="ScalarVariable")]
+
+    def to_xml(self) -> Element:
+        """Convert ModelVariables to XML Element"""
+        element = Element("ModelVariables")
+        if self.variables is not None:
+            for variable in self.variables:
+                element.append(variable.to_xml())
+        return element
 
 
 class UnitDefinitions(BaseModel):
@@ -1030,6 +1519,14 @@ class UnitDefinitions(BaseModel):
         ),
     ]
 
+    def to_xml(self) -> Element:
+        """Convert UnitDefinitions to XML Element"""
+        element = Element("UnitDefinitions")
+        if self.units is not None:
+            for unit in self.units:
+                element.append(unit.to_xml())
+        return element
+
 
 class TypeDefinitions(BaseModel):
     """Type definitions list"""
@@ -1037,6 +1534,14 @@ class TypeDefinitions(BaseModel):
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
     simple_types: Annotated[list[SimpleType], Field(..., alias="SimpleType")]
+
+    def to_xml(self) -> Element:
+        """Convert TypeDefinitions to XML Element"""
+        element = Element("TypeDefinitions")
+        if self.simple_types is not None:
+            for simple_type in self.simple_types:
+                element.append(simple_type.to_xml())
+        return element
 
 
 class FmiModelDescription(BaseModel):
@@ -1206,6 +1711,58 @@ class FmiModelDescription(BaseModel):
             description="Ordered lists of outputs, exposed state derivatives, and the initial unknowns. Optionally, the functional dependency of these variables can be defined.",
         ),
     ] = None
+
+    def to_xml(self) -> Element:
+        """Convert FmiModelDescription to XML Element"""
+        element = Element("fmiModelDescription")
+        element.set("fmiVersion", self.fmi_version)
+        element.set("modelName", self.model_name)
+        element.set("guid", self.guid)
+        if self.description is not None:
+            element.set("description", self.description)
+        if self.author is not None:
+            element.set("author", self.author)
+        if self.version is not None:
+            element.set("version", self.version)
+        if self.copyright is not None:
+            element.set("copyright", self.copyright)
+        if self.license is not None:
+            element.set("license", self.license)
+        if self.generation_tool is not None:
+            element.set("generationTool", self.generation_tool)
+        if self.generation_date_and_time is not None:
+            element.set("generationDateAndTime", self.generation_date_and_time)
+        if (
+            self.variable_naming_convention is not None
+            and self.variable_naming_convention != VariableNamingConventionEnum.flat
+        ):
+            element.set(
+                "variableNamingConvention", self.variable_naming_convention.value
+            )
+        if self.number_of_event_indicators is not None:
+            element.set("numberOfEventIndicators", str(self.number_of_event_indicators))
+
+        # Add optional components
+        if self.model_exchange is not None:
+            element.append(self.model_exchange.to_xml())
+        if self.co_simulation is not None:
+            element.append(self.co_simulation.to_xml())
+        if self.unit_definitions is not None:
+            element.append(self.unit_definitions.to_xml())
+        if self.type_definitions is not None:
+            element.append(self.type_definitions.to_xml())
+        if self.log_categories is not None:
+            element.append(self.log_categories.to_xml())
+        if self.default_experiment is not None:
+            element.append(self.default_experiment.to_xml())
+        if self.vendor_annotations is not None:
+            element.append(self.vendor_annotations.to_xml())
+        if self.model_variables is not None:
+            element.append(self.model_variables.to_xml())
+        if self.model_structure is not None:
+            element.append(self.model_structure.to_xml())
+
+        return element
 
 
 def _parse_xml_to_model(xml_content: str | Element) -> FmiModelDescription:

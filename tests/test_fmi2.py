@@ -871,3 +871,558 @@ def test_edge_cases_and_validators():
     assert _str_to_bool(None) is None
     assert _str_to_bool(False) is False
     assert _str_to_bool(True) is True
+
+
+def test_xml_serialization():
+    """Test the to_xml() methods for all model classes"""
+    from mdreader.fmi2 import (
+        FmiModelDescription,
+        ModelVariables,
+        ScalarVariable,
+        RealVariable,
+        CausalityEnum,
+        VariabilityEnum,
+        BaseUnit,
+        DisplayUnit,
+        Unit,
+        Item,
+        RealSimpleType,
+        SimpleType,
+        ModelExchange,
+        CoSimulation,
+        SourceFiles,
+        File,
+        Category,
+        LogCategories,
+        DefaultExperiment,
+        Annotation,
+        Tool,
+        UnknownDependency,
+        VariableDependency,
+        InitialUnknown,
+        InitialUnknowns,
+        ModelStructure,
+        IntegerVariable,
+        BooleanVariable,
+        StringVariable,
+        EnumerationVariable,
+        IntegerSimpleType,
+        BooleanSimpleType,
+        StringSimpleType,
+        EnumerationSimpleType,
+        DependenciesKindEnum,
+    )
+    import xml.etree.ElementTree as ET
+
+    # Test BaseUnit to_xml
+    base_unit = BaseUnit(kg=1, m=1, s=-2)  # Force non-default values
+    base_unit_xml = base_unit.to_xml()
+    assert base_unit_xml.tag == "BaseUnit"
+    assert base_unit_xml.get("kg") == "1"
+    assert base_unit_xml.get("m") == "1"
+    assert base_unit_xml.get("s") == "-2"
+
+    # Test DisplayUnit to_xml
+    display_unit = DisplayUnit(name="deg", factor=57.29577951308232)
+    display_unit_xml = display_unit.to_xml()
+    assert display_unit_xml.tag == "DisplayUnit"
+    assert display_unit_xml.get("name") == "deg"
+    assert display_unit_xml.get("factor") == "57.29577951308232"
+
+    # Test Unit to_xml
+    unit = Unit(name="rad", base_unit=base_unit, display_units=[display_unit])
+    unit_xml = unit.to_xml()
+    assert unit_xml.tag == "Unit"
+    assert unit_xml.get("name") == "rad"
+    assert len(unit_xml) == 2  # base_unit and display_unit
+
+    # Test Item to_xml
+    item = Item(name="Option1", value=1, description="First option")
+    item_xml = item.to_xml()
+    assert item_xml.tag == "Item"
+    assert item_xml.get("name") == "Option1"
+    assert item_xml.get("value") == "1"
+    assert item_xml.get("description") == "First option"
+
+    # Test RealSimpleType to_xml
+    real_simple = RealSimpleType(
+        quantity="Length", unit="m", min_value=0.0, max_value=10.0
+    )
+    real_simple_xml = real_simple.to_xml()
+    assert real_simple_xml.tag == "Real"
+    assert real_simple_xml.get("quantity") == "Length"
+    assert real_simple_xml.get("unit") == "m"
+    assert real_simple_xml.get("min") == "0.0"
+    assert real_simple_xml.get("max") == "10.0"
+
+    # Test IntegerSimpleType to_xml
+    int_simple = IntegerSimpleType(quantity="Count", min_value=0, max_value=100)
+    int_simple_xml = int_simple.to_xml()
+    assert int_simple_xml.tag == "Integer"
+    assert int_simple_xml.get("quantity") == "Count"
+    assert int_simple_xml.get("min") == "0"
+    assert int_simple_xml.get("max") == "100"
+
+    # Test BooleanSimpleType to_xml
+    bool_simple = BooleanSimpleType()
+    bool_simple_xml = bool_simple.to_xml()
+    assert bool_simple_xml.tag == "Boolean"
+
+    # Test StringSimpleType to_xml
+    str_simple = StringSimpleType()
+    str_simple_xml = str_simple.to_xml()
+    assert str_simple_xml.tag == "String"
+
+    # Test EnumerationSimpleType to_xml
+    enum_simple = EnumerationSimpleType(quantity="Options", items=[item])
+    enum_simple_xml = enum_simple.to_xml()
+    assert enum_simple_xml.tag == "Enumeration"
+    assert enum_simple_xml.get("quantity") == "Options"
+    assert len(enum_simple_xml) == 1
+
+    # Test SimpleType to_xml with Real
+    simple_type = SimpleType(
+        name="LengthType", description="A length type", real=real_simple
+    )
+    simple_type_xml = simple_type.to_xml()
+    assert simple_type_xml.tag == "SimpleType"
+    assert simple_type_xml.get("name") == "LengthType"
+    assert simple_type_xml.get("description") == "A length type"
+    assert len(simple_type_xml) == 1
+    assert simple_type_xml[0].tag == "Real"
+
+    # Test File to_xml
+    file_obj = File(name="source.c")
+    file_xml = file_obj.to_xml()
+    assert file_xml.tag == "File"
+    assert file_xml.get("name") == "source.c"
+
+    # Test SourceFiles to_xml
+    source_files = SourceFiles(files=[file_obj])
+    source_files_xml = source_files.to_xml()
+    assert source_files_xml.tag == "SourceFiles"
+    assert len(source_files_xml) == 1
+
+    # Test ModelExchange to_xml
+    model_exchange = ModelExchange(
+        model_identifier="TestModel",
+        needs_execution_tool=True,
+        source_files=source_files,
+    )
+    model_exchange_xml = model_exchange.to_xml()
+    assert model_exchange_xml.tag == "ModelExchange"
+    assert model_exchange_xml.get("modelIdentifier") == "TestModel"
+    assert model_exchange_xml.get("needsExecutionTool") == "true"
+    assert len(model_exchange_xml) == 1
+
+    # Test CoSimulation to_xml
+    co_simulation = CoSimulation(
+        model_identifier="TestModel", can_handle_variable_communication_step_size=True
+    )
+    co_simulation_xml = co_simulation.to_xml()
+    assert co_simulation_xml.tag == "CoSimulation"
+    assert co_simulation_xml.get("modelIdentifier") == "TestModel"
+    assert co_simulation_xml.get("canHandleVariableCommunicationStepSize") == "true"
+
+    # Test Category to_xml
+    category = Category(name="logEvents", description="Log events")
+    category_xml = category.to_xml()
+    assert category_xml.tag == "Category"
+    assert category_xml.get("name") == "logEvents"
+    assert category_xml.get("description") == "Log events"
+
+    # Test LogCategories to_xml
+    log_categories = LogCategories(categories=[category])
+    log_categories_xml = log_categories.to_xml()
+    assert log_categories_xml.tag == "LogCategories"
+    assert len(log_categories_xml) == 1
+
+    # Test DefaultExperiment to_xml
+    default_exp = DefaultExperiment(start_time=0.0, stop_time=10.0, step_size=0.01)
+    default_exp_xml = default_exp.to_xml()
+    assert default_exp_xml.tag == "DefaultExperiment"
+    assert default_exp_xml.get("startTime") == "0.0"
+    assert default_exp_xml.get("stopTime") == "10.0"
+    assert default_exp_xml.get("stepSize") == "0.01"
+
+    # Test Tool to_xml
+    tool = Tool(name="TestTool")
+    tool_xml = tool.to_xml()
+    assert tool_xml.tag == "Tool"
+    assert tool_xml.get("name") == "TestTool"
+
+    # Test Annotation to_xml
+    annotation = Annotation(tools=[tool])
+    annotation_xml = annotation.to_xml()
+    assert annotation_xml.tag == "Annotation"
+    assert len(annotation_xml) == 1
+
+    # Test UnknownDependency to_xml
+    unknown_dep = UnknownDependency(
+        index=1,
+        dependencies=[2, 3],
+        dependencies_kind=[
+            DependenciesKindEnum.dependent,
+            DependenciesKindEnum.constant,
+        ],
+    )
+    unknown_dep_xml = unknown_dep.to_xml()
+    assert unknown_dep_xml.tag == "Unknown"
+    assert unknown_dep_xml.get("index") == "1"
+    assert unknown_dep_xml.get("dependencies") == "2 3"
+    assert unknown_dep_xml.get("dependenciesKind") == "dependent constant"
+
+    # Test VariableDependency to_xml
+    var_dep = VariableDependency(unknowns=[unknown_dep])
+    var_dep_xml = var_dep.to_xml()
+    assert var_dep_xml.tag == "VariableDependency"
+    assert len(var_dep_xml) == 1
+
+    # Test InitialUnknown to_xml
+    initial_unknown = InitialUnknown(
+        index=1, dependencies=[2, 3], dependencies_kind=[DependenciesKindEnum.dependent]
+    )
+    initial_unknown_xml = initial_unknown.to_xml()
+    assert initial_unknown_xml.tag == "Unknown"  # Same tag as UnknownDependency
+    assert initial_unknown_xml.get("index") == "1"
+
+    # Test InitialUnknowns to_xml
+    initial_unknowns = InitialUnknowns(unknowns=[initial_unknown])
+    initial_unknowns_xml = initial_unknowns.to_xml()
+    assert initial_unknowns_xml.tag == "InitialUnknowns"
+    assert len(initial_unknowns_xml) == 1
+
+    # Test ModelStructure to_xml
+    model_structure = ModelStructure(outputs=var_dep, initial_unknowns=initial_unknowns)
+    model_structure_xml = model_structure.to_xml()
+    assert model_structure_xml.tag == "ModelStructure"
+    assert len(model_structure_xml) == 2  # outputs and initial_unknowns
+
+    # Test RealVariable to_xml
+    real_var = RealVariable(
+        declared_type="LengthType", unit="m", min_value=0.0, max_value=10.0, start=5.0
+    )
+    real_var_xml = real_var.to_xml()
+    assert real_var_xml.tag == "Real"
+    assert real_var_xml.get("declaredType") == "LengthType"
+    assert real_var_xml.get("unit") == "m"
+    assert real_var_xml.get("min") == "0.0"
+    assert real_var_xml.get("max") == "10.0"
+    assert real_var_xml.get("start") == "5.0"
+
+    # Test IntegerVariable to_xml
+    int_var = IntegerVariable(
+        declared_type="CountType", min_value=0, max_value=100, start=50
+    )
+    int_var_xml = int_var.to_xml()
+    assert int_var_xml.tag == "Integer"
+    assert int_var_xml.get("declaredType") == "CountType"
+    assert int_var_xml.get("min") == "0"
+    assert int_var_xml.get("max") == "100"
+    assert int_var_xml.get("start") == "50"
+
+    # Test BooleanVariable to_xml
+    bool_var = BooleanVariable(declared_type="FlagType", start=True)
+    bool_var_xml = bool_var.to_xml()
+    assert bool_var_xml.tag == "Boolean"
+    assert bool_var_xml.get("declaredType") == "FlagType"
+    assert bool_var_xml.get("start") == "true"
+
+    # Test StringVariable to_xml
+    str_var = StringVariable(declared_type="TextType", start="Hello")
+    str_var_xml = str_var.to_xml()
+    assert str_var_xml.tag == "String"
+    assert str_var_xml.get("declaredType") == "TextType"
+    assert str_var_xml.get("start") == "Hello"
+
+    # Test EnumerationVariable to_xml
+    enum_var = EnumerationVariable(
+        declared_type="OptionType", min_value=1, max_value=3, start=2
+    )
+    enum_var_xml = enum_var.to_xml()
+    assert enum_var_xml.tag == "Enumeration"
+    assert enum_var_xml.get("declaredType") == "OptionType"
+    assert enum_var_xml.get("min") == "1"
+    assert enum_var_xml.get("max") == "3"
+    assert enum_var_xml.get("start") == "2"
+
+    # Test ScalarVariable to_xml
+    scalar_var = ScalarVariable(
+        name="test_var",
+        value_reference=1,
+        description="A test variable",
+        causality=CausalityEnum.output,
+        variability=VariabilityEnum.continuous,
+        real=real_var,
+        annotations=annotation,
+    )
+    scalar_var_xml = scalar_var.to_xml()
+    assert scalar_var_xml.tag == "ScalarVariable"
+    assert scalar_var_xml.get("name") == "test_var"
+    assert scalar_var_xml.get("valueReference") == "1"
+    assert scalar_var_xml.get("description") == "A test variable"
+    assert scalar_var_xml.get("causality") == "output"
+    assert scalar_var_xml.get("variability") == "continuous"
+    assert len(scalar_var_xml) == 2  # Real element and Annotations element
+
+    # Test ModelVariables to_xml
+    model_vars = ModelVariables(variables=[scalar_var])
+    model_vars_xml = model_vars.to_xml()
+    assert model_vars_xml.tag == "ModelVariables"
+    assert len(model_vars_xml) == 1
+
+    # Test UnitDefinitions to_xml
+    from mdreader.fmi2 import UnitDefinitions
+
+    unit_defs = UnitDefinitions(units=[unit])
+    unit_defs_xml = unit_defs.to_xml()
+    assert unit_defs_xml.tag == "UnitDefinitions"
+    assert len(unit_defs_xml) == 1
+
+    # Test TypeDefinitions to_xml
+    from mdreader.fmi2 import TypeDefinitions
+
+    type_defs = TypeDefinitions(simple_types=[simple_type])
+    type_defs_xml = type_defs.to_xml()
+    assert type_defs_xml.tag == "TypeDefinitions"
+    assert len(type_defs_xml) == 1
+
+    # Test FmiModelDescription to_xml
+    model_desc = FmiModelDescription(
+        fmi_version="2.0",
+        model_name="TestModel",
+        guid="{12345678-1234-5678-9012-123456789012}",
+        description="A test model",
+        model_exchange=model_exchange,
+        unit_definitions=unit_defs,
+        type_definitions=type_defs,
+        log_categories=log_categories,
+        default_experiment=default_exp,
+        vendor_annotations=annotation,
+        model_variables=model_vars,
+        model_structure=model_structure,
+    )
+    model_desc_xml = model_desc.to_xml()
+    assert model_desc_xml.tag == "fmiModelDescription"
+    assert model_desc_xml.get("fmiVersion") == "2.0"
+    assert model_desc_xml.get("modelName") == "TestModel"
+    assert model_desc_xml.get("guid") == "{12345678-1234-5678-9012-123456789012}"
+    assert model_desc_xml.get("description") == "A test model"
+    assert len(model_desc_xml) == 8  # All optional components
+
+    # Test that the generated XML can be parsed back to a string
+    xml_string = ET.tostring(model_desc_xml, encoding="unicode")
+    assert "fmiModelDescription" in xml_string
+    assert "TestModel" in xml_string
+    assert "{12345678-1234-5678-9012-123456789012}" in xml_string
+
+
+def test_xml_serialization_roundtrip():
+    """Test that XML serialization and deserialization work correctly"""
+    from mdreader.fmi2 import (
+        FmiModelDescription,
+        ModelVariables,
+        ScalarVariable,
+        RealVariable,
+        CausalityEnum,
+        VariabilityEnum,
+    )
+    import xml.etree.ElementTree as ET
+
+    # Create a simple model
+    real_var = RealVariable(unit="m", min_value=0.0, max_value=10.0, start=5.0)
+    scalar_var = ScalarVariable(
+        name="test_var",
+        value_reference=1,
+        description="A test variable",
+        causality=CausalityEnum.output,
+        variability=VariabilityEnum.continuous,
+        real=real_var,
+    )
+    model_vars = ModelVariables(variables=[scalar_var])
+    model_desc = FmiModelDescription(
+        fmi_version="2.0",
+        model_name="TestModel",
+        guid="{12345678-1234-5678-9012-123456789012}",
+        model_variables=model_vars,
+    )
+
+    # Convert to XML
+    xml_element = model_desc.to_xml()
+    xml_string = ET.tostring(xml_element, encoding="unicode")
+
+    # Verify that the XML string contains expected elements
+    assert 'fmiVersion="2.0"' in xml_string
+    assert 'modelName="TestModel"' in xml_string
+    assert 'guid="{12345678-1234-5678-9012-123456789012}"' in xml_string
+    assert 'name="test_var"' in xml_string
+    assert 'valueReference="1"' in xml_string
+    assert 'causality="output"' in xml_string
+
+
+@pytest.mark.parametrize(
+    "reference_fmu",
+    [
+        "2.0/Feedthrough.fmu",
+        "2.0/BouncingBall.fmu",
+        "2.0/VanDerPol.fmu",
+        "2.0/Dahlquist.fmu",
+        "2.0/Stair.fmu",
+        "2.0/Resource.fmu",
+    ],
+)
+def test_xml_serialization_roundtrip_with_reference_fmus(
+    reference_fmu, reference_fmus_dir
+):
+    """Test XML serialization round-trip with reference FMUs"""
+    import xml.etree.ElementTree as ET
+    from mdreader.fmi2 import read_model_description, _parse_xml_to_model
+
+    filename = (reference_fmus_dir / reference_fmu).absolute()
+
+    # Read the original model description
+    original_md = read_model_description(filename)
+
+    # Convert to XML using to_xml() method
+    xml_element = original_md.to_xml()
+
+    # Convert XML element back to string
+    xml_string = ET.tostring(xml_element, encoding="unicode")
+
+    # Parse the XML string back to a model description
+    parsed_element = ET.fromstring(xml_string)
+    reconstructed_md = _parse_xml_to_model(parsed_element)
+
+    # Compare key attributes between original and reconstructed
+    assert original_md.fmi_version == reconstructed_md.fmi_version
+    assert original_md.model_name == reconstructed_md.model_name
+    assert original_md.guid == reconstructed_md.guid
+    assert original_md.description == reconstructed_md.description
+    assert original_md.author == reconstructed_md.author
+    assert original_md.version == reconstructed_md.version
+    assert original_md.copyright == reconstructed_md.copyright
+    assert original_md.license == reconstructed_md.license
+    assert original_md.generation_tool == reconstructed_md.generation_tool
+    assert (
+        original_md.number_of_event_indicators
+        == reconstructed_md.number_of_event_indicators
+    )
+
+    # Compare variable counts
+    assert len(original_md.model_variables.variables) == len(
+        reconstructed_md.model_variables.variables
+    )
+
+    # Compare some variable properties
+    for orig_var, recon_var in zip(
+        original_md.model_variables.variables,
+        reconstructed_md.model_variables.variables,
+    ):
+        assert orig_var.name == recon_var.name
+        assert orig_var.value_reference == recon_var.value_reference
+        assert orig_var.description == recon_var.description
+        assert orig_var.causality == recon_var.causality
+        assert orig_var.variability == recon_var.variability
+        assert orig_var.initial == recon_var.initial
+
+        # Compare variable type-specific properties
+        orig_type = orig_var.get_variable_type()
+        recon_type = recon_var.get_variable_type()
+        assert orig_type == recon_type
+
+        if orig_type == "Real" and orig_var.real and recon_var.real:
+            assert orig_var.real.declared_type == recon_var.real.declared_type
+            assert orig_var.real.unit == recon_var.real.unit
+            assert orig_var.real.min_value == recon_var.real.min_value
+            assert orig_var.real.max_value == recon_var.real.max_value
+            assert orig_var.real.start == recon_var.real.start
+        elif orig_type == "Integer" and orig_var.integer and recon_var.integer:
+            assert orig_var.integer.declared_type == recon_var.integer.declared_type
+            assert orig_var.integer.min_value == recon_var.integer.min_value
+            assert orig_var.integer.max_value == recon_var.integer.max_value
+            assert orig_var.integer.start == recon_var.integer.start
+        elif orig_type == "Boolean" and orig_var.boolean and recon_var.boolean:
+            assert orig_var.boolean.declared_type == recon_var.boolean.declared_type
+            assert orig_var.boolean.start == recon_var.boolean.start
+        elif orig_type == "String" and orig_var.string and recon_var.string:
+            assert orig_var.string.declared_type == recon_var.string.declared_type
+            assert orig_var.string.start == recon_var.string.start
+        elif (
+            orig_type == "Enumeration"
+            and orig_var.enumeration
+            and recon_var.enumeration
+        ):
+            assert (
+                orig_var.enumeration.declared_type
+                == recon_var.enumeration.declared_type
+            )
+            assert orig_var.enumeration.min_value == recon_var.enumeration.min_value
+            assert orig_var.enumeration.max_value == recon_var.enumeration.max_value
+            assert orig_var.enumeration.start == recon_var.enumeration.start
+
+
+@pytest.mark.parametrize(
+    "reference_fmu",
+    [
+        "2.0/Feedthrough.fmu",
+        "2.0/BouncingBall.fmu",
+    ],
+)
+def test_xml_serialization_with_optional_components(reference_fmu, reference_fmus_dir):
+    """Test XML serialization preserves optional components like ModelExchange, CoSimulation, etc."""
+    import xml.etree.ElementTree as ET
+    from mdreader.fmi2 import read_model_description
+
+    filename = (reference_fmus_dir / reference_fmu).absolute()
+
+    # Read the original model description
+    original_md = read_model_description(filename)
+
+    # Convert to XML using to_xml() method
+    xml_element = original_md.to_xml()
+
+    # Convert XML element back to string to ensure it's well-formed
+    xml_string = ET.tostring(xml_element, encoding="unicode")
+
+    # Verify that the XML string contains expected root attributes
+    assert f'fmiVersion="{original_md.fmi_version}"' in xml_string
+    assert f'modelName="{original_md.model_name}"' in xml_string
+    assert f'guid="{original_md.guid}"' in xml_string
+
+    # Check for optional components if they exist in the original
+    if original_md.model_exchange:
+        assert "<ModelExchange" in xml_string
+        assert (
+            f'modelIdentifier="{original_md.model_exchange.model_identifier}"'
+            in xml_string
+        )
+
+    if original_md.co_simulation:
+        assert "<CoSimulation" in xml_string
+        assert (
+            f'modelIdentifier="{original_md.co_simulation.model_identifier}"'
+            in xml_string
+        )
+
+    if original_md.unit_definitions and original_md.unit_definitions.units:
+        assert "<UnitDefinitions" in xml_string
+        for unit in original_md.unit_definitions.units:
+            assert f'name="{unit.name}"' in xml_string
+
+    if original_md.type_definitions and original_md.type_definitions.simple_types:
+        assert "<TypeDefinitions" in xml_string
+
+    if original_md.log_categories and original_md.log_categories.categories:
+        assert "<LogCategories" in xml_string
+
+    if original_md.default_experiment:
+        assert "<DefaultExperiment" in xml_string
+
+    if original_md.model_structure:
+        assert "<ModelStructure" in xml_string
+        if original_md.model_structure.outputs:
+            assert "<Outputs" in xml_string
+        if original_md.model_structure.derivatives:
+            assert "<Derivatives" in xml_string
+        if original_md.model_structure.initial_unknowns:
+            assert "<InitialUnknowns" in xml_string

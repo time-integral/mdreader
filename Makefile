@@ -43,6 +43,14 @@ major: ## Bump version major
 	@uvx bump-my-version bump major
 	uv lock --upgrade
 
+pre-release: ## Bump version pre-release
+	@uvx bump-my-version bump pre_l
+	uv lock --upgrade
+
+pre-release-num: ## Bump version pre-release
+	@uvx bump-my-version bump pre_n
+	uv lock --upgrade
+
 build: install ## Build the package
 	@echo "🚀 Building the package"
 	@uv build
