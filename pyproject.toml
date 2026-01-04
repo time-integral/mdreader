@@ -1,6 +1,6 @@
 [project]
 name = "mdreader"
-version = "0.1.1"
+version = "0.1.2rc0"
 description = "A Python library for reading and parsing Functional Mock-up Interface model description XML file."
 readme = "README.md"
 authors = [
@@ -21,7 +21,6 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "bump-my-version>=1.2.6",
     "httpx>=0.28.1",
     "pyright>=1.1.407",
     "pytest>=9.0.2",
