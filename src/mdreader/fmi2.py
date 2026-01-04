@@ -1458,12 +1458,9 @@ class ScalarVariable(BaseModel):
         element.set("valueReference", str(self.value_reference))
         if self.description is not None:
             element.set("description", self.description)
-        if self.causality is not None and self.causality != CausalityEnum.local:
+        if self.causality is not None:
             element.set("causality", self.causality.value)
-        if (
-            self.variability is not None
-            and self.variability != VariabilityEnum.continuous
-        ):
+        if self.variability is not None:
             element.set("variability", self.variability.value)
         if self.initial is not None:
             element.set("initial", self.initial.value)
