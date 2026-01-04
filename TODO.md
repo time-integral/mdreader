@@ -7,9 +7,10 @@
 - [x] add github action
 - [x] add pub to pypi
 
-## next
+## v0.2.0
 
 - [ ] add fmi3 support
-- [ ] add more tests
-- [ ] add reference fmu download use reference fmu for testing
+- [x] add more tests
+- [x] add reference fmu download use reference fmu for testing
 - [ ] add cli tool
+- [ ] add to_xml function
