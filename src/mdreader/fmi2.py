@@ -44,7 +44,6 @@ __all__ = [
     "StringVariable",
     "EnumerationVariable",
     "ScalarVariable",
-    "ModelVariables",
     "UnitDefinitions",
     "TypeDefinitions",
     "FmiModelDescription",
@@ -1489,22 +1488,6 @@ class ScalarVariable(BaseModel):
         return element
 
 
-class ModelVariables(BaseModel):
-    """Model variables list"""
-
-    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
-
-    variables: Annotated[list[ScalarVariable], Field(..., alias="ScalarVariable")]
-
-    def to_xml(self) -> Element:
-        """Convert ModelVariables to XML Element"""
-        element = Element("ModelVariables")
-        if self.variables is not None:
-            for variable in self.variables:
-                element.append(variable.to_xml())
-        return element
-
-
 class UnitDefinitions(BaseModel):
     """Unit definitions list"""
 
@@ -1696,7 +1679,7 @@ class FmiModelDescription(BaseModel):
         ),
     ] = None
     model_variables: Annotated[
-        ModelVariables,
+        list[ScalarVariable],
         Field(
             ...,
             alias="ModelVariables",
@@ -1758,7 +1741,10 @@ class FmiModelDescription(BaseModel):
         if self.vendor_annotations is not None:
             element.append(self.vendor_annotations.to_xml())
         if self.model_variables is not None:
-            element.append(self.model_variables.to_xml())
+            model_vars_elem = Element("ModelVariables")
+            for variable in self.model_variables:
+                model_vars_elem.append(variable.to_xml())
+            element.append(model_vars_elem)
         if self.model_structure is not None:
             element.append(self.model_structure.to_xml())
 
@@ -2213,13 +2199,13 @@ def _parse_vendor_annotations(elem: Element) -> Annotation:
     return Annotation(tools=tools)
 
 
-def _parse_model_variables(elem: Element) -> ModelVariables:
-    """Parse ModelVariables element"""
+def _parse_model_variables(elem: Element) -> list[ScalarVariable]:
+    """Parse ModelVariables element into a flat list"""
     variables = []
     for variable_elem in elem.findall("ScalarVariable"):
         variable = _parse_scalar_variable(variable_elem)
         variables.append(variable)
-    return ModelVariables(variables=variables)
+    return variables
 
 
 def _parse_scalar_variable(elem: Element) -> ScalarVariable:

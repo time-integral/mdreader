@@ -60,9 +60,10 @@ def test_basic_parsing():
         assert md.model_name == "TestModel"
         assert md.instantiation_token == "{12345678-1234-1234-1234-123456789012}"
         assert md.description == "Test model for FMI 3.0"
-        assert len(md.model_variables.variables) == 1
-        assert md.model_variables.variables[0].get_variable_type() == "Float64"
-        var = md.model_variables.variables[0].float64
+        vars_list = md.model_variables
+        assert len(vars_list) == 1
+        assert vars_list[0].get_variable_type() == "Float64"
+        var = vars_list[0].float64
         assert var is not None
         assert var.name == "testVar"
         assert var.value_reference == 0
@@ -71,6 +72,38 @@ def test_basic_parsing():
     finally:
         # Clean up
         os.unlink(temp_xml_path)
+
+
+def test_variable_convenience_properties():
+    """Variable exposes concrete and common attributes directly."""
+    from mdreader.fmi3 import (
+        Float64Variable,
+        CausalityEnum,
+        VariabilityEnum,
+        Variable,
+    )
+
+    var = Variable(
+        float64=Float64Variable(
+            name="x",
+            value_reference=1,
+            causality=CausalityEnum.output,
+            variability=VariabilityEnum.continuous,
+            start=[0.0],
+        )
+    )
+
+    assert var.name == "x"
+    assert var.value_reference == 1
+    assert var.get_variable_type() == "Float64"
+    assert var.causality == CausalityEnum.output
+    assert var.variability == VariabilityEnum.continuous
+    assert var.initial is None
+    assert var.concrete is var.float64
+
+    empty_var = Variable()
+    with pytest.raises(ValueError, match="No variable type is set"):
+        _ = empty_var.concrete
 
 
 @pytest.mark.parametrize(
@@ -239,13 +272,13 @@ def test_scalar_variables(
 
     input_vars = [
         get_var_name(var)
-        for var in md.model_variables.variables
+        for var in md.model_variables
         if get_var_causality(var) == "input"
     ]
 
     output_vars = [
         get_var_name(var)
-        for var in md.model_variables.variables
+        for var in md.model_variables
         if get_var_causality(var) == "output"
     ]
 
@@ -482,7 +515,7 @@ def test_variable_properties(
 
     # Create a mapping of variable names to variables for easy lookup
     var_map = {}
-    for var in md.model_variables.variables:
+    for var in md.model_variables:
         var_type = var.get_variable_type()
         if var_type:
             var_map[var.__getattribute__(var_type.lower()).name] = var
@@ -898,6 +931,28 @@ def test_variable_validation():
     Float64Type(min_value=1, max_value=2)
 
 
+def test_dimension_validation():
+    """Dimension must use start xor valueReference"""
+    from pydantic import ValidationError
+    from mdreader.fmi3 import Dimension
+
+    # Valid cases: exactly one of start or valueReference
+    Dimension(start=1)
+    Dimension(value_reference=2)
+
+    with pytest.raises(
+        ValidationError,
+        match=r"Dimension: exactly one of start or valueReference must be set",
+    ):
+        Dimension()
+
+    with pytest.raises(
+        ValidationError,
+        match=r"Dimension: exactly one of start or valueReference must be set",
+    ):
+        Dimension(start=1, value_reference=2)
+
+
 def test_read_model_description_with_xml_file():
     """Test reading model description from XML file directly"""
     # Create a minimal FMI 3.0 XML content for testing
@@ -925,8 +980,9 @@ def test_read_model_description_with_xml_file():
         assert md.fmi_version == "3.0"
         assert md.model_name == "TestModel"
         assert md.instantiation_token == "{12345678-1234-1234-1234-123456789012}"
-        assert len(md.model_variables.variables) == 1
-        assert md.model_variables.variables[0].get_variable_type() == "Float64"
+        vars_list = md.model_variables
+        assert len(vars_list) == 1
+        assert vars_list[0].get_variable_type() == "Float64"
     finally:
         # Clean up
         import os
@@ -961,8 +1017,9 @@ def test_read_model_description_with_directory():
         assert md.fmi_version == "3.0"
         assert md.model_name == "TestModelDir"
         assert md.instantiation_token == "{12345678-1234-1234-1234-123456789012}"
-        assert len(md.model_variables.variables) == 1
-        assert md.model_variables.variables[0].get_variable_type() == "Float64"
+        vars_list = md.model_variables
+        assert len(vars_list) == 1
+        assert vars_list[0].get_variable_type() == "Float64"
 
 
 def test_enum_values():
@@ -1009,9 +1066,7 @@ def test_clock_variables(reference_fmus_dir: pathlib.Path):
 
     # Check that we have clock variables
     clock_vars = [
-        var
-        for var in md.model_variables.variables
-        if var.get_variable_type() == "Clock"
+        var for var in md.model_variables if var.get_variable_type() == "Clock"
     ]
 
     # Clocks.fmu has 4 clock variables: inClock1, inClock2, inClock3, outClock
@@ -1044,7 +1099,7 @@ def test_structural_parameters(reference_fmus_dir: pathlib.Path):
 
     structural_params = [
         var
-        for var in md.model_variables.variables
+        for var in md.model_variables
         if get_var_causality(var) == "structuralParameter"
     ]
 
@@ -1069,7 +1124,7 @@ def test_dimensions_statespace(reference_fmus_dir: pathlib.Path):
         "der(x)": [(None, 2)],
     }
 
-    for var in md.model_variables.variables:
+    for var in md.model_variables:
         var_type = var.get_variable_type()
         if not var_type:
             continue
@@ -1087,7 +1142,7 @@ def test_variable_with_declared_type(reference_fmus_dir: pathlib.Path):
 
     # Find h which should have declaredType="Position"
     h_var = None
-    for var in md.model_variables.variables:
+    for var in md.model_variables:
         if (
             var.get_variable_type() == "Float64"
             and var.float64 is not None
@@ -1111,7 +1166,7 @@ def test_discrete_variable(reference_fmus_dir: pathlib.Path):
 
     # Find the counter variable which is Int32 discrete output
     counter = None
-    for var in md.model_variables.variables:
+    for var in md.model_variables:
         if (
             var.get_variable_type() == "Int32"
             and var.int32 is not None

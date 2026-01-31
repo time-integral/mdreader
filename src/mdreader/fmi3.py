@@ -65,7 +65,6 @@ __all__ = [
     "EnumerationVariable",
     "ClockVariable",
     "Variable",
-    "ModelVariables",
     "UnitDefinitions",
     "TypeDefinitions",
     "FmiModelDescription",
@@ -786,7 +785,7 @@ class Annotation(BaseModel):
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
-    tools: Annotated[list[Tool], Field(..., alias="Tool")]
+    tools: list[Tool] = Field(..., alias="Tool")
 
     def to_xml(self) -> Element:
         """Convert Annotation to XML Element"""
@@ -802,10 +801,19 @@ class Dimension(BaseModel):
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
-    start: Annotated[int | None, Field(default=None, alias="start")]
+    start: Annotated[int | None, Field(default=None, alias="start")] = None
     value_reference: Annotated[
         int | None, Field(default=None, alias="valueReference")
     ] = None
+
+    @model_validator(mode="after")
+    def _validate_exclusive_start_or_value_reference(self) -> "Dimension":
+        """Ensure exactly one of start or value_reference is provided."""
+        if (self.start is None) == (self.value_reference is None):
+            raise ValueError(
+                "Dimension: exactly one of start or valueReference must be set"
+            )
+        return self
 
     def to_xml(self) -> Element:
         """Convert Dimension to XML Element"""
@@ -3113,7 +3121,7 @@ class Variable(BaseModel):
         Field(default=None, alias="Clock", description="Clock variable definition"),
     ] = None
 
-    def get_variable_type(self):
+    def get_variable_type(self) -> str | None:
         """Get the type of variable based on which field is set"""
         if self.float32 is not None:
             return "Float32"
@@ -3146,6 +3154,91 @@ class Variable(BaseModel):
         elif self.clock is not None:
             return "Clock"
         return None
+
+    def _concrete(
+        self,
+    ) -> (
+        Float32Variable
+        | Float64Variable
+        | Int8Variable
+        | Int16Variable
+        | Int32Variable
+        | Int64Variable
+        | UInt8Variable
+        | UInt16Variable
+        | UInt32Variable
+        | UInt64Variable
+        | BooleanVariable
+        | StringVariable
+        | BinaryVariable
+        | EnumerationVariable
+        | ClockVariable
+    ):
+        """Return the underlying concrete variable instance or raise if unset."""
+        for attr in (
+            "float32",
+            "float64",
+            "int8",
+            "int16",
+            "int32",
+            "int64",
+            "uint8",
+            "uint16",
+            "uint32",
+            "uint64",
+            "boolean",
+            "string",
+            "binary",
+            "enumeration",
+            "clock",
+        ):
+            value = getattr(self, attr)
+            if value is not None:
+                return value
+        raise ValueError("No variable type is set")
+
+    @property
+    def concrete(
+        self,
+    ) -> (
+        Float32Variable
+        | Float64Variable
+        | Int8Variable
+        | Int16Variable
+        | Int32Variable
+        | Int64Variable
+        | UInt8Variable
+        | UInt16Variable
+        | UInt32Variable
+        | UInt64Variable
+        | BooleanVariable
+        | StringVariable
+        | BinaryVariable
+        | EnumerationVariable
+        | ClockVariable
+    ):
+        """Direct access to the concrete variable instance."""
+        return self._concrete()
+
+    @property
+    def name(self) -> str:
+        return self.concrete.name
+
+    @property
+    def value_reference(self) -> int:
+        return self.concrete.value_reference
+
+    @property
+    def causality(self) -> CausalityEnum | None:
+        return getattr(self.concrete, "causality", None)
+
+    @property
+    def variability(self) -> VariabilityEnum | None:
+        return getattr(self.concrete, "variability", None)
+
+    @property
+    def initial(self) -> InitialEnum | None:
+        return getattr(self.concrete, "initial", None)
 
     def to_xml(self) -> Element:
         """Convert Variable to XML Element"""
@@ -3182,22 +3275,6 @@ class Variable(BaseModel):
             return self.clock.to_xml()
         else:
             raise ValueError("No variable type is set")
-
-
-class ModelVariables(BaseModel):
-    """Model variables list for FMI 3.0"""
-
-    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
-
-    variables: Annotated[list[Variable], Field(..., alias="Variable")]
-
-    def to_xml(self) -> Element:
-        """Convert ModelVariables to XML Element"""
-        element = Element("ModelVariables")
-        if self.variables is not None:
-            for variable in self.variables:
-                element.append(variable.to_xml())
-        return element
 
 
 class UnitDefinitions(BaseModel):
@@ -3391,7 +3468,7 @@ class FmiModelDescription(BaseModel):
         ),
     ] = None
     model_variables: Annotated[
-        ModelVariables,
+        list[Variable],
         Field(
             ...,
             alias="ModelVariables",
@@ -3453,7 +3530,10 @@ class FmiModelDescription(BaseModel):
         if self.vendor_annotations is not None:
             element.append(self.vendor_annotations.to_xml())
         if self.model_variables is not None:
-            element.append(self.model_variables.to_xml())
+            model_vars_elem = Element("ModelVariables")
+            for variable in self.model_variables:
+                model_vars_elem.append(variable.to_xml())
+            element.append(model_vars_elem)
         if self.model_structure is not None:
             element.append(self.model_structure.to_xml())
 
@@ -5182,8 +5262,8 @@ def _parse_dimensions(elem: Element) -> list[Dimension] | None:
     return dims or None
 
 
-def _parse_model_variables(elem: Element) -> ModelVariables:
-    """Parse ModelVariables element"""
+def _parse_model_variables(elem: Element) -> list[Variable]:
+    """Parse ModelVariables element into a flat list"""
     variables = []
     # Find all variable types in the model variables section
     for var_type in [
@@ -5206,7 +5286,7 @@ def _parse_model_variables(elem: Element) -> ModelVariables:
         for variable_elem in elem.findall(var_type):
             variable = _parse_variable(variable_elem, var_type)
             variables.append(variable)
-    return ModelVariables(variables=variables)
+    return variables
 
 
 def _parse_variable(elem: Element, var_type: str) -> Variable:
