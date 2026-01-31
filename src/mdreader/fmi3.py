@@ -69,6 +69,7 @@ __all__ = [
     "UnitDefinitions",
     "TypeDefinitions",
     "FmiModelDescription",
+    "Dimension",
 ]
 
 
@@ -796,6 +797,26 @@ class Annotation(BaseModel):
         return element
 
 
+class Dimension(BaseModel):
+    """Array dimension definition for FMI 3.0 variables"""
+
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
+
+    start: Annotated[int | None, Field(default=None, alias="start")]
+    value_reference: Annotated[
+        int | None, Field(default=None, alias="valueReference")
+    ] = None
+
+    def to_xml(self) -> Element:
+        """Convert Dimension to XML Element"""
+        element = Element("Dimension")
+        if self.start is not None:
+            element.set("start", str(self.start))
+        if self.value_reference is not None:
+            element.set("valueReference", str(self.value_reference))
+        return element
+
+
 class Unknown(BaseModel):
     """Unknown variable definition for model structure"""
 
@@ -1007,6 +1028,14 @@ class Float32Variable(BaseModel):
             description="Set to true, e.g., for crank angle. If true and variable is a state, relative tolerance should be zero on this variable.",
         ),
     ] = False
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[float] | None,
         Field(
@@ -1052,6 +1081,9 @@ class Float32Variable(BaseModel):
             element.set("nominal", str(self.nominal))
         if self.unbounded is not None and self.unbounded:
             element.set("unbounded", str(self.unbounded).lower())
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join(map(str, self.start)))
         return element
@@ -1184,6 +1216,14 @@ class Float64Variable(BaseModel):
             description="Set to true, e.g., for crank angle. If true and variable is a state, relative tolerance should be zero on this variable.",
         ),
     ] = False
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[float] | None,
         Field(
@@ -1229,6 +1269,9 @@ class Float64Variable(BaseModel):
             element.set("nominal", str(self.nominal))
         if self.unbounded is not None and self.unbounded:
             element.set("unbounded", str(self.unbounded).lower())
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join(map(str, self.start)))
         return element
@@ -1325,6 +1368,14 @@ class Int8Variable(BaseModel):
             description="Maximum value of the variable. max >= min required",
         ),
     ] = None
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[int] | None,
         Field(
@@ -1360,6 +1411,9 @@ class Int8Variable(BaseModel):
             element.set("min", str(self.min_value))
         if self.max_value is not None:
             element.set("max", str(self.max_value))
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join(map(str, self.start)))
         return element
@@ -1456,6 +1510,14 @@ class Int16Variable(BaseModel):
             description="Maximum value of the variable. max >= min required",
         ),
     ] = None
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[int] | None,
         Field(
@@ -1491,6 +1553,9 @@ class Int16Variable(BaseModel):
             element.set("min", str(self.min_value))
         if self.max_value is not None:
             element.set("max", str(self.max_value))
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join(map(str, self.start)))
         return element
@@ -1587,6 +1652,14 @@ class Int32Variable(BaseModel):
             description="Maximum value of the variable. max >= min required",
         ),
     ] = None
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[int] | None,
         Field(
@@ -1622,6 +1695,9 @@ class Int32Variable(BaseModel):
             element.set("min", str(self.min_value))
         if self.max_value is not None:
             element.set("max", str(self.max_value))
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join(map(str, self.start)))
         return element
@@ -1718,6 +1794,14 @@ class Int64Variable(BaseModel):
             description="Maximum value of the variable. max >= min required",
         ),
     ] = None
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[int] | None,
         Field(
@@ -1753,6 +1837,9 @@ class Int64Variable(BaseModel):
             element.set("min", str(self.min_value))
         if self.max_value is not None:
             element.set("max", str(self.max_value))
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join(map(str, self.start)))
         return element
@@ -1849,6 +1936,14 @@ class UInt8Variable(BaseModel):
             description="Maximum value of the variable. max >= min required",
         ),
     ] = None
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[int] | None,
         Field(
@@ -1884,6 +1979,9 @@ class UInt8Variable(BaseModel):
             element.set("min", str(self.min_value))
         if self.max_value is not None:
             element.set("max", str(self.max_value))
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join(map(str, self.start)))
         return element
@@ -1980,6 +2078,14 @@ class UInt16Variable(BaseModel):
             description="Maximum value of the variable. max >= min required",
         ),
     ] = None
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[int] | None,
         Field(
@@ -2015,6 +2121,9 @@ class UInt16Variable(BaseModel):
             element.set("min", str(self.min_value))
         if self.max_value is not None:
             element.set("max", str(self.max_value))
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join(map(str, self.start)))
         return element
@@ -2111,6 +2220,14 @@ class UInt32Variable(BaseModel):
             description="Maximum value of the variable. max >= min required",
         ),
     ] = None
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[int] | None,
         Field(
@@ -2146,6 +2263,9 @@ class UInt32Variable(BaseModel):
             element.set("min", str(self.min_value))
         if self.max_value is not None:
             element.set("max", str(self.max_value))
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join(map(str, self.start)))
         return element
@@ -2242,6 +2362,14 @@ class UInt64Variable(BaseModel):
             description="Maximum value of the variable. max >= min required",
         ),
     ] = None
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[int] | None,
         Field(
@@ -2277,6 +2405,9 @@ class UInt64Variable(BaseModel):
             element.set("min", str(self.min_value))
         if self.max_value is not None:
             element.set("max", str(self.max_value))
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join(map(str, self.start)))
         return element
@@ -2349,6 +2480,14 @@ class BooleanVariable(BaseModel):
             description="If present, name of type defined with TypeDefinitions / Type providing defaults.",
         ),
     ] = None
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[bool] | None,
         Field(
@@ -2378,6 +2517,9 @@ class BooleanVariable(BaseModel):
             )
         if self.declared_type is not None:
             element.set("declaredType", self.declared_type)
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join([str(s).lower() for s in self.start]))
         return element
@@ -2450,6 +2592,14 @@ class StringVariable(BaseModel):
             description="If present, name of type defined with TypeDefinitions / Type providing defaults.",
         ),
     ] = None
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[str] | None,
         Field(
@@ -2479,6 +2629,9 @@ class StringVariable(BaseModel):
             )
         if self.declared_type is not None:
             element.set("declaredType", self.declared_type)
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join(self.start))
         return element
@@ -2567,6 +2720,14 @@ class BinaryVariable(BaseModel):
             description="Maximum size of binary data",
         ),
     ] = None
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[bytes] | None,
         Field(
@@ -2600,6 +2761,9 @@ class BinaryVariable(BaseModel):
             element.set("mimeType", self.mime_type)
         if self.max_size is not None:
             element.set("maxSize", str(self.max_size))
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join([s.hex() for s in self.start]))
         return element
@@ -2696,6 +2860,14 @@ class EnumerationVariable(BaseModel):
             description="Maximum value of the variable. max >= min required",
         ),
     ] = None
+    dimensions: Annotated[
+        list[Dimension] | None,
+        Field(
+            default=None,
+            alias="Dimension",
+            description="Array dimensions of the variable",
+        ),
+    ] = None
     start: Annotated[
         list[int] | None,
         Field(
@@ -2730,6 +2902,9 @@ class EnumerationVariable(BaseModel):
             element.set("min", str(self.min_value))
         if self.max_value is not None:
             element.set("max", str(self.max_value))
+        if self.dimensions is not None:
+            for dim in self.dimensions:
+                element.append(dim.to_xml())
         if self.start is not None:
             element.set("start", " ".join(map(str, self.start)))
         return element
@@ -4990,6 +5165,23 @@ def _parse_vendor_annotations(elem: Element) -> Annotation:
     return Annotation(tools=tools)
 
 
+def _parse_dimensions(elem: Element) -> list[Dimension] | None:
+    """Parse Dimension child elements on an arrayable variable"""
+    dims: list[Dimension] = []
+    for dim_elem in elem.findall("Dimension"):
+        start_attr = dim_elem.get("start")
+        value_ref_attr = dim_elem.get("valueReference")
+        dims.append(
+            Dimension(
+                start=int(start_attr) if start_attr is not None else None,
+                value_reference=int(value_ref_attr)
+                if value_ref_attr is not None
+                else None,
+            )
+        )
+    return dims or None
+
+
 def _parse_model_variables(elem: Element) -> ModelVariables:
     """Parse ModelVariables element"""
     variables = []
@@ -5081,6 +5273,7 @@ def _parse_float32_variable(elem: Element) -> Float32Variable:
     nominal = elem.get("nominal")
     unbounded = elem.get("unbounded")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5107,6 +5300,7 @@ def _parse_float32_variable(elem: Element) -> Float32Variable:
         max_value=float(max_value) if max_value is not None else None,
         nominal=float(nominal) if nominal is not None else None,
         unbounded=_str_to_bool(unbounded),
+        dimensions=dimensions,
         start=start_values,
     )
 
@@ -5138,6 +5332,7 @@ def _parse_float64_variable(elem: Element) -> Float64Variable:
     nominal = elem.get("nominal")
     unbounded = elem.get("unbounded")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5164,6 +5359,7 @@ def _parse_float64_variable(elem: Element) -> Float64Variable:
         max_value=float(max_value) if max_value is not None else None,
         nominal=float(nominal) if nominal is not None else None,
         unbounded=_str_to_bool(unbounded),
+        dimensions=dimensions,
         start=start_values,
     )
 
@@ -5190,6 +5386,7 @@ def _parse_int8_variable(elem: Element) -> Int8Variable:
     min_value = elem.get("min")
     max_value = elem.get("max")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5211,6 +5408,7 @@ def _parse_int8_variable(elem: Element) -> Int8Variable:
         quantity=quantity,
         min_value=int(min_value) if min_value is not None else None,
         max_value=int(max_value) if max_value is not None else None,
+        dimensions=dimensions,
         start=start_values,
     )
 
@@ -5237,6 +5435,7 @@ def _parse_int16_variable(elem: Element) -> Int16Variable:
     min_value = elem.get("min")
     max_value = elem.get("max")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5258,6 +5457,7 @@ def _parse_int16_variable(elem: Element) -> Int16Variable:
         quantity=quantity,
         min_value=int(min_value) if min_value is not None else None,
         max_value=int(max_value) if max_value is not None else None,
+        dimensions=dimensions,
         start=start_values,
     )
 
@@ -5284,6 +5484,7 @@ def _parse_int32_variable(elem: Element) -> Int32Variable:
     min_value = elem.get("min")
     max_value = elem.get("max")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5305,6 +5506,7 @@ def _parse_int32_variable(elem: Element) -> Int32Variable:
         quantity=quantity,
         min_value=int(min_value) if min_value is not None else None,
         max_value=int(max_value) if max_value is not None else None,
+        dimensions=dimensions,
         start=start_values,
     )
 
@@ -5331,6 +5533,7 @@ def _parse_int64_variable(elem: Element) -> Int64Variable:
     min_value = elem.get("min")
     max_value = elem.get("max")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5352,6 +5555,7 @@ def _parse_int64_variable(elem: Element) -> Int64Variable:
         quantity=quantity,
         min_value=int(min_value) if min_value is not None else None,
         max_value=int(max_value) if max_value is not None else None,
+        dimensions=dimensions,
         start=start_values,
     )
 
@@ -5378,6 +5582,7 @@ def _parse_uint8_variable(elem: Element) -> UInt8Variable:
     min_value = elem.get("min")
     max_value = elem.get("max")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5399,6 +5604,7 @@ def _parse_uint8_variable(elem: Element) -> UInt8Variable:
         quantity=quantity,
         min_value=int(min_value) if min_value is not None else None,
         max_value=int(max_value) if max_value is not None else None,
+        dimensions=dimensions,
         start=start_values,
     )
 
@@ -5425,6 +5631,7 @@ def _parse_uint16_variable(elem: Element) -> UInt16Variable:
     min_value = elem.get("min")
     max_value = elem.get("max")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5446,6 +5653,7 @@ def _parse_uint16_variable(elem: Element) -> UInt16Variable:
         quantity=quantity,
         min_value=int(min_value) if min_value is not None else None,
         max_value=int(max_value) if max_value is not None else None,
+        dimensions=dimensions,
         start=start_values,
     )
 
@@ -5472,6 +5680,7 @@ def _parse_uint32_variable(elem: Element) -> UInt32Variable:
     min_value = elem.get("min")
     max_value = elem.get("max")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5493,6 +5702,7 @@ def _parse_uint32_variable(elem: Element) -> UInt32Variable:
         quantity=quantity,
         min_value=int(min_value) if min_value is not None else None,
         max_value=int(max_value) if max_value is not None else None,
+        dimensions=dimensions,
         start=start_values,
     )
 
@@ -5519,6 +5729,7 @@ def _parse_uint64_variable(elem: Element) -> UInt64Variable:
     min_value = elem.get("min")
     max_value = elem.get("max")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5540,6 +5751,7 @@ def _parse_uint64_variable(elem: Element) -> UInt64Variable:
         quantity=quantity,
         min_value=int(min_value) if min_value is not None else None,
         max_value=int(max_value) if max_value is not None else None,
+        dimensions=dimensions,
         start=start_values,
     )
 
@@ -5563,6 +5775,7 @@ def _parse_boolean_variable(elem: Element) -> BooleanVariable:
     )
     declared_type = elem.get("declaredType")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5581,6 +5794,7 @@ def _parse_boolean_variable(elem: Element) -> BooleanVariable:
             can_handle_multiple_set_per_time_instant
         ),
         declared_type=declared_type,
+        dimensions=dimensions,
         start=start_values,
     )
 
@@ -5604,6 +5818,7 @@ def _parse_string_variable(elem: Element) -> StringVariable:
     )
     declared_type = elem.get("declaredType")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5622,6 +5837,7 @@ def _parse_string_variable(elem: Element) -> StringVariable:
             can_handle_multiple_set_per_time_instant
         ),
         declared_type=declared_type,
+        dimensions=dimensions,
         start=start_values,
     )
 
@@ -5647,6 +5863,7 @@ def _parse_binary_variable(elem: Element) -> BinaryVariable:
     mime_type = elem.get("mimeType")
     max_size = elem.get("maxSize")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5667,6 +5884,7 @@ def _parse_binary_variable(elem: Element) -> BinaryVariable:
         declared_type=declared_type,
         mime_type=mime_type,
         max_size=int(max_size) if max_size is not None else None,
+        dimensions=dimensions,
         start=start_values,
     )
 
@@ -5697,6 +5915,7 @@ def _parse_enumeration_variable(elem: Element) -> EnumerationVariable:
     min_value = elem.get("min")
     max_value = elem.get("max")
     start = elem.get("start")
+    dimensions = _parse_dimensions(elem)
 
     start_values = None
     if start is not None:
@@ -5718,6 +5937,7 @@ def _parse_enumeration_variable(elem: Element) -> EnumerationVariable:
         quantity=quantity,
         min_value=int(min_value) if min_value is not None else None,
         max_value=int(max_value) if max_value is not None else None,
+        dimensions=dimensions,
         start=start_values,
     )
 
