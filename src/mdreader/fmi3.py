@@ -785,7 +785,7 @@ class Annotation(BaseModel):
 
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
-    tools: list[Tool] = Field(..., alias="Tool")
+    tools: Annotated[list[Tool] | None, Field(default=None, alias="Tool")] = None
 
     def to_xml(self) -> Element:
         """Convert Annotation to XML Element"""
