@@ -1052,6 +1052,34 @@ def test_structural_parameters(reference_fmus_dir: pathlib.Path):
     assert len(structural_params) == 3
 
 
+def test_dimensions_statespace(reference_fmus_dir: pathlib.Path):
+    """Test that Dimension elements are parsed for array variables in StateSpace.fmu"""
+    filename = (reference_fmus_dir / "3.0/StateSpace.fmu").absolute()
+    md = read_model_description(filename)
+
+    expected_dims = {
+        "A": [(None, 2), (None, 2)],
+        "B": [(None, 2), (None, 1)],
+        "C": [(None, 3), (None, 2)],
+        "D": [(None, 3), (None, 1)],
+        "x0": [(None, 2)],
+        "u": [(None, 1)],
+        "y": [(None, 3)],
+        "x": [(None, 2)],
+        "der(x)": [(None, 2)],
+    }
+
+    for var in md.model_variables.variables:
+        var_type = var.get_variable_type()
+        if not var_type:
+            continue
+        obj = getattr(var, var_type.lower())
+        if obj.name in expected_dims:
+            assert obj.dimensions is not None, f"{obj.name} missing dimensions"
+            dims = [(d.start, d.value_reference) for d in obj.dimensions]
+            assert dims == expected_dims[obj.name]
+
+
 def test_variable_with_declared_type(reference_fmus_dir: pathlib.Path):
     """Test that declaredType attribute is correctly parsed"""
     filename = (reference_fmus_dir / "3.0/BouncingBall.fmu").absolute()
