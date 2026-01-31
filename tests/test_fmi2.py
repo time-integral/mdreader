@@ -175,12 +175,8 @@ def test_scarlar_variables(
 ):
     filename = (reference_fmus_dir / reference_fmu).absolute()
     md = read_model_description(filename)
-    input_vars = [
-        var.name for var in md.model_variables.variables if var.causality == "input"
-    ]
-    output_vars = [
-        var.name for var in md.model_variables.variables if var.causality == "output"
-    ]
+    input_vars = [var.name for var in md.model_variables if var.causality == "input"]
+    output_vars = [var.name for var in md.model_variables if var.causality == "output"]
     assert sorted(input_vars) == sorted(expected_inputs)
     assert sorted(output_vars) == sorted(expected_outputs)
 
@@ -411,7 +407,7 @@ def test_variable_properties(reference_fmu, expected_variables, reference_fmus_d
     md = read_model_description(filename)
 
     # Create a mapping of variable names to variables for easy lookup
-    var_map = {var.name: var for var in md.model_variables.variables}
+    var_map = {var.name: var for var in md.model_variables}
 
     for expected_var in expected_variables:
         var_name = expected_var["name"]
@@ -877,7 +873,6 @@ def test_xml_serialization():
     """Test the to_xml() methods for all model classes"""
     from mdreader.fmi2 import (
         FmiModelDescription,
-        ModelVariables,
         ScalarVariable,
         RealVariable,
         CausalityEnum,
@@ -1165,11 +1160,8 @@ def test_xml_serialization():
     assert scalar_var_xml.get("variability") == "continuous"
     assert len(scalar_var_xml) == 2  # Real element and Annotations element
 
-    # Test ModelVariables to_xml
-    model_vars = ModelVariables(variables=[scalar_var])
-    model_vars_xml = model_vars.to_xml()
-    assert model_vars_xml.tag == "ModelVariables"
-    assert len(model_vars_xml) == 1
+    # Collect model variables as a flat list
+    model_vars = [scalar_var]
 
     # Test UnitDefinitions to_xml
     from mdreader.fmi2 import UnitDefinitions
@@ -1221,7 +1213,6 @@ def test_xml_serialization_roundtrip():
     """Test that XML serialization and deserialization work correctly"""
     from mdreader.fmi2 import (
         FmiModelDescription,
-        ModelVariables,
         ScalarVariable,
         RealVariable,
         CausalityEnum,
@@ -1239,12 +1230,11 @@ def test_xml_serialization_roundtrip():
         variability=VariabilityEnum.continuous,
         real=real_var,
     )
-    model_vars = ModelVariables(variables=[scalar_var])
     model_desc = FmiModelDescription(
         fmi_version="2.0",
         model_name="TestModel",
         guid="{12345678-1234-5678-9012-123456789012}",
-        model_variables=model_vars,
+        model_variables=[scalar_var],
     )
 
     # Convert to XML
@@ -1309,14 +1299,12 @@ def test_xml_serialization_roundtrip_with_reference_fmus(
     )
 
     # Compare variable counts
-    assert len(original_md.model_variables.variables) == len(
-        reconstructed_md.model_variables.variables
-    )
+    assert len(original_md.model_variables) == len(reconstructed_md.model_variables)
 
     # Compare some variable properties
     for orig_var, recon_var in zip(
-        original_md.model_variables.variables,
-        reconstructed_md.model_variables.variables,
+        original_md.model_variables,
+        reconstructed_md.model_variables,
     ):
         assert orig_var.name == recon_var.name
         assert orig_var.value_reference == recon_var.value_reference
