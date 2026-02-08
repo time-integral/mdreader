@@ -1,6 +1,6 @@
 [project]
 name = "mdreader"
-version = "0.3.2rc0"
+version = "0.3.2"
 description = "A Python library for reading and parsing Functional Mock-up Interface model description XML file."
 readme = "README.md"
 authors = [
